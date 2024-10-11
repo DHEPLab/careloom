@@ -176,7 +176,7 @@ const BabyModalForm = ({ disableStage, ...props }: BabyModalFormProps) => {
           onSearch={debounce(handleSearchArea, 500)}
           onSelect={handleSelectArea}
           onBlur={handleFreeTextSearch}
-          placeholder="England, London, Argyle Street 10, ABC Building"
+          placeholder={t("buildingAddressPlaceholder")}
           options={options}
         />
       </Form.Item>

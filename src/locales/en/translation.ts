@@ -185,6 +185,7 @@ export default {
     reject: "Reject",
     rejectTitle: "Are you sure you want to reject the application?",
     rejectContent: "After rejection, you can continue to apply for baby modification",
+    buildingAddressPlaceholder: "Please enter state,city,district and street/building",
     detailAddressPlaceholder: "Please enter floor, house number, unit number",
   },
   myAccount: {

@@ -181,6 +181,7 @@ export default {
     reject: "驳回申请",
     rejectTitle: "确定驳回申请嘛?",
     rejectContent: "驳回后，宝宝可以继续申请修改",
+    buildingAddressPlaceholder: "请输入省份，城市，区域和街道名",
     detailAddressPlaceholder: "请输入详细地址，精确到门牌号",
   },
   myAccount: {
