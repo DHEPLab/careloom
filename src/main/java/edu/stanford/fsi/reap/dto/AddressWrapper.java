@@ -11,4 +11,8 @@ public class AddressWrapper {
 
   @NotNull @Size(max = 200)
   private String location;
+
+  private Double longitude;
+
+  private Double latitude;
 }

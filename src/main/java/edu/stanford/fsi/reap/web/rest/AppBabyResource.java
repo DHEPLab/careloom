@@ -290,6 +290,8 @@ public class AppBabyResource {
         baby -> {
           baby.setArea(wrapper.getArea());
           baby.setLocation(wrapper.getLocation());
+          baby.setLatitude(wrapper.getLatitude());
+          baby.setLongitude(wrapper.getLongitude());
         });
   }
 
