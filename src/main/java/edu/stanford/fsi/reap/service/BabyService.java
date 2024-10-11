@@ -164,7 +164,7 @@ public class BabyService {
               }
 
               if (baby.getLatitude() == null || baby.getLongitude() == null) {
-                String address = baby.getArea() + " " + baby.getLocation();
+                String address = baby.getArea() ;
                 try {
                   JsonNode json = googleMapService.findPlace(address);
                   if (json != null && "OK".equals(json.path("status").asText())) {
