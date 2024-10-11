@@ -24,7 +24,7 @@ export interface BabyModalFormValues {
     | "FORMULA_FEEDING"
     | "MIXED_BREAST_FORMULA_FEEDING"
     | "NO_BREAST_FORMULA_FEEDING";
-  area: string[];
+  area: string;
   location: string;
   longitude: number | null;
   latitude: number | null;
