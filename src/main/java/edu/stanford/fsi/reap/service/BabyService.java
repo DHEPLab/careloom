@@ -163,7 +163,7 @@ public class BabyService {
                 baby.setAssistedFood(false);
               }
               if (baby.getLatitude() == null || baby.getLongitude() == null) {
-                String address = baby.getArea() + " " + baby.getLocation();
+                String address = baby.getArea() ;
                 try {
                   GeoLocation geoLocation = googleMapService.getGeoLocationFromTextSearch(address);
                   if (geoLocation != null) {
