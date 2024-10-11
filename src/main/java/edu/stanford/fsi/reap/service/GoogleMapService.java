@@ -22,6 +22,9 @@ public class GoogleMapService {
   private static final String FIND_PLACE_URL_V1 =
       "https://places.googleapis.com/v1/places/{placeId}";
 
+  private static final String TEXT_SEARCH_URL =
+      "https://maps.googleapis.com/maps/api/place/textsearch/json";
+
   @Value("${google_map.key}")
   private String API_KEY;
 
@@ -102,6 +105,44 @@ public class GoogleMapService {
           "Error fetching find place results by place ID from Google Maps API V1: {}",
           e.getMessage());
       throw new BadRequestAlertException(e.toString());
+    }
+  }
+
+  public JsonNode textSearch(String query) {
+    String url =
+        UriComponentsBuilder.fromHttpUrl(TEXT_SEARCH_URL)
+            .queryParam("query", query)
+            .queryParam("key", API_KEY)
+            .queryParam("fields", "formatted_address,name,geometry")
+            .toUriString();
+
+    try {
+      return restTemplate.getForObject(url, JsonNode.class);
+    } catch (Exception e) {
+      log.error("Error fetching text search results from Google Maps API: {}", e.getMessage());
+      throw new BadRequestAlertException("Text Search Error!");
+    }
+  }
+
+  public GeoLocation getGeoLocationFromTextSearch(String query) {
+    JsonNode json = textSearch(query);
+    if (json != null && "OK".equals(json.path("status").asText())) {
+      JsonNode results = json.get("results");
+      if (results != null && results.size() > 0) {
+        JsonNode elected = results.get(0);
+        JsonNode location = elected.get("geometry").get("location");
+        double lat = location.get("lat").asDouble();
+        double lng = location.get("lng").asDouble();
+        String formattedAddress = elected.get("formatted_address").asText();
+        return new GeoLocation(formattedAddress, lat, lng);
+      } else {
+        log.warn("No results found for query '{}'", query);
+        return null;
+      }
+    } else {
+      String status = json != null ? json.path("status").asText() : "null response";
+      log.warn("Text Search API error for query '{}': {}", query, status);
+      return null;
     }
   }
 }
