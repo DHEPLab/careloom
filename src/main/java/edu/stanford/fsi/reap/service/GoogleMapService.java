@@ -40,7 +40,9 @@ public class GoogleMapService {
         UriComponentsBuilder.fromHttpUrl(AUTOCOMPLETE_URL)
             .queryParam("types", "geocode")
             .queryParam("key", API_KEY)
-            .queryParam("input", input).build(false).toUriString();
+            .queryParam("input", input)
+            .build(false)
+            .toUriString();
 
     try {
       return restTemplate.getForObject(url, JsonNode.class);
@@ -56,7 +58,9 @@ public class GoogleMapService {
             .queryParam("inputtype", "textquery")
             .queryParam("key", API_KEY)
             .queryParam("input", input)
-            .queryParam("fields", "formatted_address,name,geometry").build(false).toUriString();
+            .queryParam("fields", "formatted_address,name,geometry")
+            .build(false)
+            .toUriString();
 
     try {
       return restTemplate.getForObject(url, JsonNode.class);
@@ -112,6 +116,7 @@ public class GoogleMapService {
             .queryParam("query", query)
             .queryParam("key", API_KEY)
             .queryParam("fields", "formatted_address,name,geometry")
+            .build(false)
             .toUriString();
 
     try {
