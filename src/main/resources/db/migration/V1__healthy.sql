@@ -229,6 +229,6 @@ CREATE TABLE `visit` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 -- -----------------------------
--- 初始化一条admin用户数据
+-- init admin user
 -- -----------------------------
 INSERT INTO `user` VALUES (1, NOW(), 'ANONYMOUS', b'0', NOW(), 'ANONYMOUS', NULL, '$2a$10$pv3kUd1uuwVB4OLflRpwQOPB7FA/7FZra4Xf5ZnrL.uf9SR3STh4m', '18888888888', 'Administrator', 'ROLE_ADMIN', 'admin', NULL);

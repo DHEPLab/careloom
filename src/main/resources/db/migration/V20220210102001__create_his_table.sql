@@ -23,14 +23,14 @@ CREATE TABLE `baby_history` (
                                 `approved` bit(1) NOT NULL,
                                 `action_from_app` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
                                 `close_account_reason` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-                                `history_id` bigint unsigned DEFAULT NULL COMMENT '原始的主键ID',
-                                `longitude` decimal(10,6) DEFAULT NULL COMMENT '经度',
-                                `latitude` decimal(10,6) DEFAULT NULL COMMENT '纬度',
-                                `show_location` bit(1) DEFAULT NULL COMMENT '是否展示经纬度，系统计算的经纬度默认不显示',
+                                `history_id` bigint unsigned DEFAULT NULL,
+                                `longitude` decimal(10,6) DEFAULT NULL,
+                                `latitude` decimal(10,6) DEFAULT NULL,
+                                `show_location` bit(1) DEFAULT NULL,
                                 PRIMARY KEY (`id`),
                                 KEY `FK52xwhd26ynrhd0mi6qdck6ux7` (`chw_id`) USING BTREE,
                                 KEY `FKclftxyb8c1dwqgfiv41s2dprv` (`curriculum_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='儿童信息-历史修改记录';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 -- carer_history definition
@@ -51,7 +51,7 @@ CREATE TABLE `carer_history` (
                                  `history_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
                                  PRIMARY KEY (`id`),
                                  KEY `FKesxg0gdragoyd8atftlvisw4o` (`baby_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='看护人-历史修改记录';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 -- community_house_worker_history definition
@@ -66,10 +66,10 @@ CREATE TABLE `community_house_worker_history` (
                                                   `identity` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
                                                   `supervisor_id` bigint DEFAULT NULL,
                                                   `tags` json DEFAULT NULL,
-                                                  `history_id` bigint unsigned DEFAULT NULL COMMENT '关联主键id',
+                                                  `history_id` bigint unsigned DEFAULT NULL,
                                                   PRIMARY KEY (`id`),
                                                   KEY `FKehn3fk7ktkpxj40h9242dptof` (`supervisor_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='社区工作者-历史记录表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 -- curriculum_history definition
@@ -86,10 +86,10 @@ CREATE TABLE `curriculum_history` (
                                       `name` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
                                       `published` bit(1) NOT NULL,
                                       `source_id` bigint DEFAULT NULL,
-                                      `history_id` bigint unsigned DEFAULT NULL COMMENT '关联主键ID',
+                                      `history_id` bigint unsigned DEFAULT NULL,
                                       PRIMARY KEY (`id`),
                                       KEY `FK3ew3mxf1e969ll21wwjf5e639` (`source_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='课程大纲-历史记录';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 -- lesson_history definition
@@ -113,12 +113,12 @@ CREATE TABLE `lesson_history` (
                                   `curriculum_id` bigint DEFAULT NULL,
                                   `source_id` bigint DEFAULT NULL,
                                   `questionnaire_id` bigint DEFAULT NULL,
-                                  `history_id` bigint unsigned DEFAULT NULL COMMENT '关联历史记录ID',
+                                  `history_id` bigint unsigned DEFAULT NULL,
                                   PRIMARY KEY (`id`),
                                   KEY `FKb2m3bre39wl0j8bf0aiapuqgi` (`curriculum_id`) USING BTREE,
                                   KEY `FKjkbkfiipill91ovdg4w61qwy0` (`source_id`) USING BTREE,
                                   KEY `m_lesson_o_questionnaire` (`questionnaire_id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='上课-历史记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 -- module_history definition
@@ -138,9 +138,9 @@ CREATE TABLE `module_history` (
                                   `published` bit(1) NOT NULL,
                                   `topic` int NOT NULL,
                                   `version_key` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-                                  `history_id` bigint unsigned DEFAULT NULL COMMENT '关联主键id',
+                                  `history_id` bigint unsigned DEFAULT NULL,
                                   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='模块信息-历史记录';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 -- questionnaire_history definition
@@ -157,10 +157,10 @@ CREATE TABLE `questionnaire_history` (
                                          `deleted` bit(1) NOT NULL,
                                          `last_modified_at` datetime DEFAULT NULL,
                                          `last_modified_by` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-                                         `history_id` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '关联主键id',
+                                         `history_id` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL,
                                          PRIMARY KEY (`id`),
                                          KEY `source_id` (`source_id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='问答信息-历史记录';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 -- tag_history definition
@@ -189,10 +189,10 @@ CREATE TABLE `user_history` (
                                 `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
                                 `chw_id` bigint DEFAULT NULL,
                                 `last_modified_password_at` datetime DEFAULT NULL,
-                                `history_id` bigint unsigned DEFAULT NULL COMMENT '用户历史记录id',
+                                `history_id` bigint unsigned DEFAULT NULL,
                                 PRIMARY KEY (`id`),
                                 KEY `FK2s48epbxv6n5pbvgc9dwb6ue0` (`chw_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='用户信息-历史记录';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 -- visit_history definition
@@ -218,14 +218,14 @@ CREATE TABLE `visit_history` (
                                  `start_time` datetime DEFAULT NULL,
                                  `complete_chw_id` bigint DEFAULT NULL,
                                  `delete_reason` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-                                 `history_id` bigint unsigned DEFAULT NULL COMMENT '历史记录id',
+                                 `history_id` bigint unsigned DEFAULT NULL,
                                  `distance` decimal(20,6) DEFAULT NULL,
                                  PRIMARY KEY (`id`),
                                  KEY `FK1vrf57uxfypegehkhk0m7l8j1` (`complete_chw_id`) USING BTREE,
                                  KEY `FK2j2kupipmgku1fbm89jdh0epw` (`chw_id`) USING BTREE,
                                  KEY `FKmumitrl8l8mvbpbgne6s0eyvi` (`baby_id`) USING BTREE,
                                  KEY `FKpm8tem62xkvub1ulcbqil6qqj` (`lesson_id`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='家庭访问-历史记录';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 
 -- visit_report_history definition
@@ -242,4 +242,4 @@ CREATE TABLE `visit_report_history` (
                                         `history_id` bigint unsigned DEFAULT NULL,
                                         PRIMARY KEY (`id`),
                                         KEY `v_r_visit` (`visit_id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='家庭访问记录-历史记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

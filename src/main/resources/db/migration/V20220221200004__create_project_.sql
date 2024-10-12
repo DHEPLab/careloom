@@ -11,5 +11,4 @@ CREATE TABLE project (
 )
     ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
-COLLATE=utf8mb4_bin
-COMMENT='项目管理';
+COLLATE=utf8mb4_bin;

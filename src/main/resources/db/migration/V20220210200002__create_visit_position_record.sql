@@ -11,4 +11,4 @@ CREATE TABLE visit_position_record (
                                                last_modified_by varchar(50) NULL,
                                                deleted BIT NULL,
                                                CONSTRAINT visit_position_record_pk PRIMARY KEY (id)
-)ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='宝宝家访位置记录';
+)ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;

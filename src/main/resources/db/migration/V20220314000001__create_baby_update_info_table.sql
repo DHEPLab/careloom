@@ -1,7 +1,7 @@
 CREATE TABLE baby_update_info (
                                           id BIGINT UNSIGNED auto_increment NOT NULL,
                                           baby_id BIGINT UNSIGNED NULL,
-                                          update_normal BIT(1) NULL COMMENT '是否是普通更新',
+                                          update_normal BIT(1) NULL,
                                           created_at DATETIME NULL,
                                           created_by VARCHAR(50) NULL,
                                           deleted BIT(1) NULL,
@@ -11,5 +11,4 @@ CREATE TABLE baby_update_info (
 )
     ENGINE=InnoDB
 DEFAULT CHARSET=utf8mb4
-COLLATE=utf8mb4_general_ci
-COMMENT='宝宝更新信息';
+COLLATE=utf8mb4_general_ci;
