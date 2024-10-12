@@ -231,4 +231,4 @@ CREATE TABLE `visit` (
 -- -----------------------------
 -- init admin user
 -- -----------------------------
-INSERT INTO `user` VALUES (1, NOW(), 'ANONYMOUS', b'0', NOW(), 'ANONYMOUS', NULL, '$2a$10$pv3kUd1uuwVB4OLflRpwQOPB7FA/7FZra4Xf5ZnrL.uf9SR3STh4m', '18888888888', 'Administrator', 'ROLE_ADMIN', 'admin', NULL);
+INSERT INTO `user` VALUES (1, '2021-03-04 11:05:23', 'ANONYMOUS', b'0', '2021-03-04 11:05:23', 'ANONYMOUS', NULL, '$2a$10$pv3kUd1uuwVB4OLflRpwQOPB7FA/7FZra4Xf5ZnrL.uf9SR3STh4m', '18888888888', 'Administrator', 'ROLE_ADMIN', 'admin', NULL);
