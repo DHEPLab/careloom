@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  api:
+    name: Backend (Spring Boot)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 11
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('services/api/**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle-
+      - name: Build and test
+        run: ./gradlew build
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+  admin-web:
+    name: Admin Dashboard (React)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/admin-web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: services/admin-web/yarn.lock
+      - run: yarn install --frozen-lockfile
+      - run: yarn test:ci
+      - run: yarn build
+
+  mobile-app:
+    name: Mobile App (Expo)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: services/app/yarn.lock
+      - run: yarn install --frozen-lockfile
+      - run: yarn test:ci

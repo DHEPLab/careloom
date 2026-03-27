@@ -34,12 +34,8 @@ After you install the lefthook, you can run command `lefthook install` to init t
 or you can run command `lefthook run pre-commit` and `lefthook run pre-push` to test the hooks running
 
 
-Default user credentials:
-* Username: admin
-* Password: admin123
-
-* Username: super_admin
-* Password: 123456
+Default user credentials are configured via database seed migrations.
+See `src/main/resources/application-local.sample.yml` and `.env.example` for configuration details.
 
 ## External Dependencies
 
