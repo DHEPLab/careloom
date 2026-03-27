@@ -1,0 +1,39 @@
+# CareLoom Render Blueprint
+# https://render.com/docs/blueprint-spec
+#
+# IMPORTANT: Render does not offer managed MySQL.
+# You must provision MySQL externally (e.g., PlanetScale, Aiven, or
+# a self-managed instance) and set SPRING_DATASOURCE_URL accordingly.
+
+services:
+  - type: web
+    name: careloom-api
+    runtime: docker
+    dockerfilePath: services/api/Dockerfile
+    dockerContext: services/api
+    plan: starter
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: docker
+      - key: SPRING_DATASOURCE_URL
+        sync: false  # Set manually — Render has no managed MySQL
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+  - type: web
+    name: careloom-admin
+    runtime: docker
+    dockerfilePath: services/admin-web/Dockerfile
+    dockerContext: services/admin-web
+    plan: starter
+    envVars:
+      - key: API_URL
+        fromService:
+          name: careloom-api
+          type: web
+          property: hostport

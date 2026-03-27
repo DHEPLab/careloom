@@ -1,0 +1,27 @@
+# CareLoom Development Database
+# Usage: docker compose up -d
+# This starts only MySQL for local development.
+# API and admin-web run natively (./gradlew bootRun, yarn dev).
+
+services:
+  db:
+    image: mysql:5.7
+    container_name: careloom-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-careloom}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-careloom}
+      MYSQL_USER: ${MYSQL_USER:-careloom}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-careloom}
+    ports:
+      - "3306:3306"
+    volumes:
+      - careloom_dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-careloom}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  careloom_dbdata:

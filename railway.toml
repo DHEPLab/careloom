@@ -1,0 +1,30 @@
+# CareLoom Railway Configuration
+# https://docs.railway.app/reference/config-as-code
+#
+# Deploy: Connect this repo in the Railway dashboard.
+# Railway provides managed MySQL — add a MySQL plugin from the dashboard.
+# The MYSQL_* variables are auto-injected when the plugin is attached.
+
+[build]
+# Railway detects Dockerfiles automatically per service.
+
+[deploy]
+healthcheckPath = "/"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+# Service: careloom-api
+# Dockerfile: services/api/Dockerfile
+# Build context: services/api
+# Environment variables (set in Railway dashboard):
+#   SPRING_PROFILES_ACTIVE=docker
+#   SPRING_DATASOURCE_URL=jdbc:mysql://${{MySQL.MYSQLHOST}}:${{MySQL.MYSQLPORT}}/${{MySQL.MYSQLDATABASE}}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf-8
+#   SPRING_DATASOURCE_USERNAME=${{MySQL.MYSQLUSER}}
+#   SPRING_DATASOURCE_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+#   JWT_SECRET_KEY=<generate-a-strong-secret>
+
+# Service: careloom-admin
+# Dockerfile: services/admin-web/Dockerfile
+# Build context: services/admin-web
+# Environment variables:
+#   API_URL=http://careloom-api.railway.internal:8080
