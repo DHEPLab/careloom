@@ -39,9 +39,15 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-careloom}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf-8
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-careloom}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-careloom}
-      JWT_SECRET_KEY: ${JWT_SECRET:-dev-secret-do-not-use-in-prod}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-do-not-use-in-prod}
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   admin-web:
     build:
@@ -50,7 +56,8 @@ services:
     container_name: careloom-admin
     restart: always
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     environment:
       API_URL: http://api:8080
     ports:
