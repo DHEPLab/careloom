@@ -1,0 +1,69 @@
+# === IDE ===
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+out/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+~$**
+
+# === Environment ===
+.env
+.env.local
+.env.*.local
+
+# === Backend (services/api) ===
+services/api/build/
+services/api/log
+services/api/bin/
+services/api/.gradle/
+services/api/.apt_generated
+services/api/.classpath
+services/api/.factorypath
+services/api/.project
+services/api/.settings/
+services/api/.springBeans
+services/api/.sts4-cache
+services/api/application-local.yml
+services/api/logback-local.xml
+services/api/docker-compose-local.yml
+
+# === Admin Dashboard (services/admin-web) ===
+services/admin-web/node_modules/
+services/admin-web/dist/
+services/admin-web/coverage/
+services/admin-web/.pnp
+services/admin-web/.pnp.js
+services/admin-web/.history/
+services/admin-web/.scannerwork/
+services/admin-web/service.conf
+services/admin-web/*storybook.log
+
+# === Mobile App (services/app) ===
+services/app/node_modules/
+services/app/.expo/
+services/app/dist/
+services/app/web-build/
+services/app/web-report/
+services/app/coverage/
+services/app/.scannerwork/
+services/app/eas-build.json
+
+# === Shared ===
+*.tar.gz
+*.log
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === Docker ===
+docker-compose-local.yml
