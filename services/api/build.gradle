@@ -1,0 +1,101 @@
+plugins {
+    id 'org.springframework.boot' version '2.2.6.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+    id 'java'
+    id 'idea'
+    id 'jacoco'
+    id "org.sonarqube" version "3.5.0.2730"
+    id "com.github.spotbugs" version "4.5.1"
+    id "com.diffplug.spotless" version "6.25.0"
+}
+
+group = 'edu.stanford.fsi.reap'
+version = '0.0.1'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+    maven { url "https://oss.jfrog.org/artifactory/oss-snapshot-local/" }
+}
+
+sonar {
+    properties {
+        property "sonar.projectKey", "visit-link-service"
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.flywaydb:flyway-core:6.4.2'
+    implementation 'com.google.guava:guava:28.2-jre'
+    implementation 'com.google.code.gson:gson:2.11.0'
+    implementation 'software.amazon.awssdk:s3:2.27.15'
+    implementation 'software.amazon.awssdk:sts:2.27.15'
+    implementation 'org.zalando:problem-spring-web-starter:0.25.2'
+    implementation 'io.springfox:springfox-swagger2:2.9.2'
+    implementation "io.jsonwebtoken:jjwt:0.9.1"
+    implementation 'org.apache.poi:poi:5.0.0'
+    implementation 'org.apache.poi:poi-ooxml:5.0.0'
+    implementation 'commons-io:commons-io:2.8.0'
+    implementation 'org.modelmapper:modelmapper:2.3.8'
+    implementation 'org.gavaghan:geodesy:1.1.3'
+    implementation 'cn.hutool:hutool-core:5.7.20'
+
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'mysql:mysql-connector-java'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'com.h2database:h2:1.4.200'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation('org.junit.platform:junit-platform-launcher:1.5.2')
+}
+
+test {
+    useJUnitPlatform()
+}
+
+spotless {
+    format 'misc', {
+        target '*.gradle', '.gitattributes', '*.md', '.gitignore'
+
+        // define the steps to apply to those files
+        trimTrailingWhitespace()
+        indentWithSpaces(4)
+        endWithNewline()
+        setEncoding('utf-8')
+    }
+
+    java {
+        googleJavaFormat().reflowLongStrings()
+        formatAnnotations()
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled false
+        html.destination file("${buildDir}/jacoco")
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it,
+                    exclude: [
+                            '**/config/**',
+                            '**/jwt/**',
+                            '**/security/**',
+                            '**/converter/**',
+                            '**/logging/**',
+                            '**/pojo/**',
+                            '**/entity/**',
+                            '**/dto/**'
+                    ]
+            )
+        }))
+    }
+}

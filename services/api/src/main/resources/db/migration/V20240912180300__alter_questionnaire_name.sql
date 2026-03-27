@@ -1,0 +1,1 @@
+ALTER TABLE questionnaire MODIFY COLUMN name VARCHAR(40);

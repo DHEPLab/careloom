@@ -1,0 +1,1 @@
+ALTER TABLE visit ADD COLUMN delete_reason varchar(200);

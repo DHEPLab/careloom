@@ -1,0 +1,1 @@
+ALTER TABLE carer_history MODIFY COLUMN name VARCHAR(50);

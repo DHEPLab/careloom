@@ -1,0 +1,1 @@
+ALTER TABLE error_log CHANGE COLUMN type_id type_id BIGINT(20) NULL ;

@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/healthy?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8&useSSL=false
+    username: root
+    password:
+
+application:
+  oss:
+    host: https://healthy-future-dev.oss-cn-shanghai.aliyuncs.com
+    endpoint: https://oss-cn-shanghai.aliyuncs.com
+    access-key-id:
+    access-key-secret:
+    bucket-name: healthy-future-dev
+
+logging:
+  level:
+    edu.stanford.fsi.reap: DEBUG

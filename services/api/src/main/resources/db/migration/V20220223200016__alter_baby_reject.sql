@@ -1,0 +1,1 @@
+ALTER TABLE `baby` ADD COLUMN `rejected` bit(1) NOT NULL;

@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: health-future-backend
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DATABASE_URL}?useUnicode=true&characterEncoding=utf8
+  jpa:
+    open-in-view: false
+    database-platform: org.hibernate.dialect.MySQL5InnoDBDialect
+    database: mysql
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+  mvc:
+    throw-exception-if-no-handler-found: true
+  servlet:
+    multipart:
+      max-file-size: -1
+      max-request-size: -1
+  flyway:
+    clean-disabled: true
+
+server:
+  port: 8080
+
+application:
+  secret-key: ${JWT_SECRET_KEY}
+  token-validity-day: 30
+  aws:
+    bucket-name: visit-link-bucket-dev
+  map:
+    key: 111
+
+  cron:
+    visit-expired: "0 59 23 * * ?"
+
+google_map:
+  key: ${GOOGLE_MAP_API_KEY}

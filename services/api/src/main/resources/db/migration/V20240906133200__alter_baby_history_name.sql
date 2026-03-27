@@ -1,0 +1,1 @@
+ALTER TABLE baby_history MODIFY COLUMN name VARCHAR(50);

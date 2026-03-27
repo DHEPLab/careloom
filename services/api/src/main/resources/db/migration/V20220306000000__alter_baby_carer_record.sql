@@ -1,0 +1,2 @@
+ALTER TABLE baby_modify_record DROP `old_baby_json`, DROP `new_baby_json`,ADD `baby_json` varchar(4096);
+ALTER TABLE carer_modify_record DROP `old_carer_json`, DROP `new_carer_json`,ADD `carer_json` varchar(4096);

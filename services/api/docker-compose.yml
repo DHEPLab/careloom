@@ -1,0 +1,20 @@
+version: '3.6'
+services:
+  mysql:
+    image: mysql:5.7.18
+    volumes:
+      - /var/volumes/healthy-future/mysql/:/var/lib/mysql/
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=8641D901-1BB4-46CA-8D9D-29F8A1BFB80B
+      - MYSQL_DATABASE=healthy
+    ports:
+      - "3306:3306"
+    command: mysqld --lower_case_table_names=1 --default-time-zone=UTC --skip-ssl --character_set_server=utf8mb4 --collation-server=utf8mb4_bin --explicit_defaults_for_timestamp
+    restart: always
+    networks:
+      - internal_network
+
+networks:
+  internal_network:
+    name: internal_network

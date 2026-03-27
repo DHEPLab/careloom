@@ -1,0 +1,12 @@
+spring:
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    edu.stanford.fsi.reap: INFO
+  config: classpath:logback-prod.xml
+
+application:
+  aws:
+    bucket-name: visit-link-bucket-stg

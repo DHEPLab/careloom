@@ -1,0 +1,1 @@
+ALTER TABLE `baby_modify_record` DROP `baby_json`;

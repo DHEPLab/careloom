@@ -1,0 +1,2 @@
+INSERT INTO `user` (created_at, created_by, deleted, last_modified_at, last_modified_by, last_modified_password_at, password_hash, phone, real_name, `role`, username, chw_id) VALUES('2022-03-04 11:05:23', 'ANONYMOUS', 0, '2022-03-04 11:05:23', 'ANONYMOUS', NULL, '$2a$10$B1NUX3Nbf8AGBk74CLBfKeP4oR8q7BLIgdRJI1zwtXqMvnU78AA7.', '18888888890', 'Super_Admin', 'ROLE_SUPER_ADMIN', 'super_admin', NULL);
+update `user` as u set u.project_id = (select id from project as p where p.code='health_future') where u.`role` ='ROLE_SUPER_ADMIN';

@@ -1,0 +1,1 @@
+alter table `baby` modify `name` varchar(10) character set gb2312 collate gb2312_chinese_ci;

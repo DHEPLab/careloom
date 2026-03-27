@@ -1,0 +1,8 @@
+logging:
+  level:
+    edu.stanford.fsi.reap: DEBUG
+
+application:
+  aws:
+    bucket-name: visit-link-bucket-dev
+

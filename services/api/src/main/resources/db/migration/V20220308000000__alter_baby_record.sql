@@ -1,0 +1,1 @@
+ALTER TABLE baby_modify_record MODIFY COLUMN `approved` bit(1);

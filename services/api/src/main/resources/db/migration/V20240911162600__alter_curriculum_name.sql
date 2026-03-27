@@ -1,0 +1,1 @@
+ALTER TABLE curriculum MODIFY COLUMN name VARCHAR(100);
