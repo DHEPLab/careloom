@@ -1,0 +1,21 @@
+node_modules/**/*
+.expo/*
+npm-debug.*
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+web-report/
+dist/
+dist.*/
+.scannerwork/**/*
+
+# macOS
+.DS_Store
+
+*.tar.gz
+/coverage/
+.idea
+eas-build.json
