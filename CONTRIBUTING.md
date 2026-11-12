@@ -33,15 +33,7 @@ Open an issue with the "enhancement" label describing:
 
 See [docs/developer-guide/local-setup.md](docs/developer-guide/local-setup.md) for detailed instructions.
 
-Quick start:
-```bash
-git clone https://github.com/DHEPLab/careloom.git
-cd careloom
-docker compose up -d          # Start MySQL
-cd services/api && ./gradlew bootRun  # API on :8080
-cd services/admin-web && yarn dev     # Admin on :3000
-cd services/app && npx expo start     # Mobile app
-```
+Use the [testing runbook](docs/developer-guide/testing.md) for safe test commands, isolated synthetic data and cleanup. Keep development and preview builds pointed at your own test API. Do not use participant records, existing research services or credentials in tests, screenshots or public issues.
 
 ## Coding Conventions
 

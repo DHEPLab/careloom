@@ -1,204 +1,70 @@
-# Self-Hosted Deploy
+# Local self-hosted setup
 
-Run CareLoom on your own server using Docker Compose. This is the recommended approach for organizations that need full control over their data.
+Type: explanation.
 
-## Prerequisites
+This path builds the API, admin dashboard and a new MySQL database for local evaluation with synthetic records. It does not install the Android app or establish production readiness. The API Dockerfile builds its JAR from source and runs backend tests; no host Java installation or prebuilt JAR is required for this path.
 
-- **Docker Desktop** (or Docker Engine + Docker Compose v2) -- [Install Docker](https://docs.docker.com/get-docker/)
-- **Git**
-- **2 GB RAM** minimum (4 GB recommended)
-- Ports 3000, 3306, and 8080 available
+## Start an isolated instance
 
-## Quick Start
+Type: how-to.
 
-```bash
-# Clone the repository
-git clone https://github.com/DHEPLab/careloom.git
-cd careloom
+Run each command from the repository root. Use Docker Engine with Compose v2 or Docker Desktop. Image and dependency downloads need network access.
 
-# Copy and edit environment variables
-cp .env.example .env
-# Edit .env with your preferred editor — change ALL default values for production
+1. In a new local checkout, create an evaluation configuration:
+   ```bash
+   cp .env.example .env
+   ```
+   Recovery: If `.env` already exists, review it rather than overwriting it. Confirm it does not point at an existing research database or service.
+2. In `.env`, choose unused `ADMIN_PORT` and `API_PORT` values and review the evaluation-only database/JWT settings.
+   Recovery: If ports are occupied, choose different ports for this project. Do not stop another project's services.
+3. In the repository root, validate configuration for a unique Compose project:
+   ```bash
+   docker compose -p careloom-local-evaluation -f docker-compose.full.yml config --quiet
+   ```
+   Recovery: If Compose reports a missing value, set it in `.env` and rerun this command. Do not print a rendered secret-bearing configuration into shared logs.
+4. In the repository root, build and start that project:
+   ```bash
+   docker compose -p careloom-local-evaluation -f docker-compose.full.yml up --build -d
+   ```
+   Recovery: If building or startup fails, inspect the scoped logs below. Do not reuse a database from another project to bypass a failure.
+5. In the repository root, inspect startup:
+   ```bash
+   docker compose -p careloom-local-evaluation -f docker-compose.full.yml ps
+   docker compose -p careloom-local-evaluation -f docker-compose.full.yml logs --tail=100 api
+   ```
+   Recovery: If the API is unhealthy, check migrations and database connectivity in the private logs. Do not edit historical migration files or reset an existing database.
+6. On the local machine, open the dashboard at `http://127.0.0.1:3000` and check API status at `http://127.0.0.1:8080/actuator/health` when using the example ports.
+   Recovery: If you changed ports, use the values in `.env`. If the dashboard loads but login fails, inspect nginx/API logs and the `/admin/` and `/api/` proxy path.
 
-# Start all services (DB + API + Admin Dashboard)
-docker compose -f docker-compose.full.yml up --build -d
-```
+The local bootstrap account is `admin` / `admin`. These credentials and the example signing key are for isolated evaluation. Do not expose this instance or put real family data in it. See [First Setup](../implementer-guide/first-setup.md) for program configuration after validation.
 
-Wait 1-2 minutes for the API to finish running database migrations, then access:
+## Network and feature boundaries
 
-| Service | URL | Notes |
-|---------|-----|-------|
-| Admin Dashboard | http://localhost:3000 | Program manager interface |
-| API | http://localhost:8080 | Backend API |
-| MySQL | localhost:3306 | Database (not exposed in production) |
+Type: reference.
 
-Default login: **admin** / **admin**
+- Dashboard and API host ports bind to `127.0.0.1`; MySQL is internal to the Compose network.
+- The dashboard container uses `API_URL=http://api:8080`; its browser sends same-origin requests through nginx.
+- Media uploads and maps require your own separately configured services. A successful health/login test does not verify those features.
+- An Android device cannot reach your machine through the device's `localhost`. Configure a deliberate test endpoint using the [mobile guide](../developer-guide/mobile-app.md).
+- The curriculum PDF is separate from app data. Build and publish [structured modules](../implementer-guide/curriculum-management.md) for delivery.
+- Cloud templates remain [unverified starting points](one-click-deploy.md).
 
-## Environment Variables
+## Stop and preserve local data
 
-All variables are defined in `.env`. Copy `.env.example` and change every value before deploying to production.
+Type: how-to.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MYSQL_ROOT_PASSWORD` | `careloom` | MySQL root password |
-| `MYSQL_DATABASE` | `careloom` | Database name |
-| `MYSQL_USER` | `careloom` | Database user for the API |
-| `MYSQL_PASSWORD` | `careloom` | Database user password |
-| `JWT_SECRET_KEY` | `dev-secret-do-not-use-in-prod` | JWT signing secret. Generate with `openssl rand -hex 32` |
-| `API_URL` | `http://localhost:8080` | API URL for the admin dashboard to connect to |
-
-## Deploy to a VPS
-
-For a production deployment on a Linux server (Ubuntu 22.04+ recommended).
-
-### 1. Server Setup
-
-```bash
-# Install Docker
-curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-# Log out and back in for group change to take effect
-
-# Install Caddy (reverse proxy with automatic HTTPS)
-sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update
-sudo apt install caddy
-```
-
-### 2. Clone and Configure
+In the repository root, stop only this evaluation project:
 
 ```bash
-git clone https://github.com/DHEPLab/careloom.git /opt/careloom
-cd /opt/careloom
-
-cp .env.example .env
-# IMPORTANT: Change ALL values in .env
-# Generate a strong JWT secret:
-#   openssl rand -hex 32
+docker compose -p careloom-local-evaluation -f docker-compose.full.yml down
 ```
 
-### 3. Start Services
+The database volume remains. If you used a different project name, use that same name here. Recovery: If unsure which project owns the resources, inspect `docker compose ls` and do not remove volumes.
 
-```bash
-docker compose -f docker-compose.full.yml up --build -d
-```
+Deleting an evaluation database is a separate destructive action. See the [testing runbook](../developer-guide/testing.md#cleanup) for the explicit synthetic-only cleanup gate. Do not use `down -v` to repair a shared or operational database.
 
-### 4. Configure Caddy (Reverse Proxy + HTTPS)
+## Existing deployments
 
-Create `/etc/caddy/Caddyfile`:
+Type: explanation.
 
-```
-careloom.example.com {
-    handle /api/* {
-        reverse_proxy localhost:8080
-    }
-    handle /actuator/* {
-        respond 404
-    }
-    handle {
-        reverse_proxy localhost:3000
-    }
-}
-
-api.careloom.example.com {
-    reverse_proxy localhost:8080
-}
-```
-
-Replace `careloom.example.com` with your domain. Caddy automatically provisions TLS certificates via Let's Encrypt.
-
-```bash
-sudo systemctl reload caddy
-```
-
-### 5. Update API_URL
-
-Edit `.env` and set `API_URL` to your public API URL:
-
-```
-API_URL=https://api.careloom.example.com
-```
-
-Restart the admin dashboard to pick up the change:
-
-```bash
-docker compose -f docker-compose.full.yml up -d --no-deps admin-web
-```
-
-## Managing the Deployment
-
-### View Logs
-
-```bash
-# All services
-docker compose -f docker-compose.full.yml logs -f
-
-# Single service
-docker compose -f docker-compose.full.yml logs -f api
-```
-
-### Stop Services
-
-```bash
-docker compose -f docker-compose.full.yml down
-```
-
-### Restart Services
-
-```bash
-docker compose -f docker-compose.full.yml restart
-```
-
-### Update to Latest Version
-
-```bash
-cd /opt/careloom
-git pull
-docker compose -f docker-compose.full.yml up --build -d
-```
-
-### Database Backup
-
-```bash
-docker exec careloom-db mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" careloom > backup-$(date +%Y%m%d).sql
-```
-
-### Database Restore
-
-```bash
-docker exec -i careloom-db mysql -u root -p"$MYSQL_ROOT_PASSWORD" careloom < backup-20250101.sql
-```
-
-## Troubleshooting
-
-### Port 3306 already in use
-Another MySQL instance is running on the host. Either stop it (`sudo systemctl stop mysql`) or change the host port mapping in `docker-compose.full.yml`:
-```yaml
-ports:
-  - "3307:3306"  # Map to 3307 on the host
-```
-
-### API won't start / "Communications link failure"
-The API depends on MySQL being fully ready. Check that the database container is healthy:
-```bash
-docker compose -f docker-compose.full.yml ps
-```
-If the `db` service shows `unhealthy`, check its logs for errors. Common cause: insufficient disk space or memory.
-
-### Out of memory
-MySQL and the Spring Boot API together need at least 1.5 GB of RAM. If running on a constrained server, add swap:
-```bash
-sudo fallocate -l 2G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
-```
-
-### Admin dashboard loads but shows blank page
-Check browser console for errors. The most common cause is `API_URL` pointing to the wrong address. The admin dashboard container needs to reach the API container. When using Docker Compose, the default `http://api:8080` should work. When accessing from outside Docker (e.g., via Caddy), use the public URL.
-
-### Flyway migration errors
-Never modify existing migration files. If a migration fails partway, you may need to manually fix the database state and update the `flyway_schema_history` table. Check the API logs for the specific migration that failed.
+This new-instance guide does not describe an upgrade or credential rotation. Changing MySQL initialization values in `.env` does not change account passwords in an existing database. Use the operator-owned [maintenance procedure](../implementer-guide/security.md#existing-database-credentials) and verify backups before an operational change.

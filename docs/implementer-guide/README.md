@@ -1,12 +1,12 @@
 # Implementer Guide
 
-This guide is for program managers and NGO staff who are setting up and running CareLoom for a community health worker (CHW) home visiting program. No coding experience is required.
+This guide is for program managers and NGO staff who are setting up and running CareLoom for a community health worker (CHW) home visiting program. The content editor does not require software development. A technical operator must first configure and verify your deployment.
 
 ## Sections
 
 | Guide | What You Will Learn |
 |-------|---------------------|
-| [First Setup](first-setup.md) | Creating your organization, adding admin accounts, setting up CHW accounts, and uploading curriculum content after deployment |
+| [First Setup](first-setup.md) | Creating your organization, adding admin accounts, setting up CHW accounts, and configuring structured curriculum content after deployment |
 | [Curriculum Management](curriculum-management.md) | Building curricula with stages, modules, components, and scheduling visits to baby ages |
 | [Managing CHWs](managing-chws.md) | Adding community health workers, assigning supervisors, and managing their accounts |
 | [Monitoring Visits](monitoring-visits.md) | Tracking visit completion, viewing reports, and exporting data from the admin dashboard |

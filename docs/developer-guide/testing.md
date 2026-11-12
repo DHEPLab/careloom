@@ -1,163 +1,104 @@
-# Testing
+# Testing runbook
 
-Each service has its own test setup. This page describes how to run tests and the testing conventions for each.
+## Safe default checks
 
-## API (Spring Boot)
+Type: how-to.
 
-### Running Tests
+Use a separate checkout with synthetic fixtures. The component test commands below use mocked services or the API test profile; they do not require a running research API or MySQL database.
 
-```bash
-cd services/api
+1. In `services/admin-web`, install locked dependencies:
+   ```bash
+   yarn install --frozen-lockfile
+   ```
+   Recovery: If dependency installation fails, inspect the error and retain the lockfile. Use a writable local package cache if needed.
+2. In `services/admin-web`, run dashboard tests and its production build:
+   ```bash
+   yarn test:ci
+   yarn build
+   ```
+   Pass signal: both commands exit zero with no failed tests. Recovery: Fix the reported failure before using the built dashboard; passing tests alone do not verify nginx routing.
+3. In `services/app`, install locked dependencies and run the mobile tests:
+   ```bash
+   yarn install --frozen-lockfile
+   yarn test:ci --runInBand
+   ```
+   Pass signal: no failed suites or tests; preserve the skipped-test count. Recovery: Inspect the failure rather than hiding it by changing the CI timezone.
+4. In `services/app`, check local-calendar portability:
+   ```bash
+   TZ=America/New_York yarn test:ci --runInBand
+   TZ=UTC yarn test:ci --runInBand
+   TZ=Asia/Shanghai yarn test:ci --runInBand
+   ```
+   Pass signal: all three runs pass. Recovery: Compare fixtures and UI inputs; UTC-midnight date strings are not necessarily the intended local calendar day.
+5. In `services/api`, run backend tests with JDK 11:
+   ```bash
+   SPRING_PROFILES_ACTIVE=test ./gradlew --no-daemon --max-workers=2 test
+   ```
+   Pass signal: `BUILD SUCCESSFUL`, with zero failed tests. Recovery: If no compatible JDK exists, use the [Docker build](../getting-started/self-hosted-deploy.md), whose build stage runs these tests. Do not switch tests to an operational datasource.
 
-# Run all tests
-./gradlew test
+The API test profile uses H2 and disables Flyway. It does not validate MySQL migrations. Dashboard/mobile fixtures mock HTTP; they do not establish real-device readiness or clinical validity.
 
-# Run tests with coverage report
-./gradlew test jacocoTestReport
-```
+## Test boundaries
 
-Coverage reports are generated in `build/jacoco/`.
+Type: reference.
 
-### Test Stack
+Safe in the isolated checkout:
 
-- **JUnit 5** (via `spring-boot-starter-test`)
-- **Spring Security Test** for authentication testing
-- **H2 in-memory database** for tests (no MySQL required)
+- Component unit tests and static builds.
+- `docker compose -p careloom-local-evaluation -f docker-compose.full.yml config --quiet` after reviewing `.env`.
+- `python3 scripts/deployment-smoke.py --help`, which makes no requests.
 
-### Conventions
+Require a deliberate disposable instance or separate operational authorization:
 
-- Test classes go in `src/test/java/` mirroring the main source structure.
-- Use `@SpringBootTest` for integration tests that need the full application context.
-- Use `@WebMvcTest` for controller-only tests.
-- The H2 database is used automatically in tests, so no Docker MySQL is needed.
-- Coverage excludes `config/`, `jwt/`, `security/`, `converter/`, `logging/`, `pojo/`, `entity/`, `dto/` packages (see `build.gradle` JaCoCo config).
+- The deployment smoke check below writes synthetic records.
+- Starting a stack against a database runs migrations.
+- Volume deletion, backup restore and password changes affect stored state.
+- EAS builds use a separate hosted build service. Running or distributing an app can contact its configured API.
 
-### Example
+Never substitute a research endpoint or participant records for a missing fixture. Do not log returned tokens, database passwords or family details.
 
-```java
-@SpringBootTest
-class ExampleServiceTest {
+## Synthetic installation smoke check
 
-    @Autowired
-    private ExampleService exampleService;
+Type: how-to.
 
-    @Test
-    void shouldCreateExample() {
-        // arrange
-        CreateExampleDTO dto = new CreateExampleDTO("test");
+1. In the repository root, follow the [local setup](../getting-started/self-hosted-deploy.md) with a new Compose project and new volume.
+   Recovery: If the project or volume already contains operational data, stop and choose a new identity.
+2. In the repository root, inspect its identity and ports:
+   ```bash
+   docker compose -p careloom-local-evaluation -f docker-compose.full.yml ps
+   ```
+   Recovery: If the ports belong to another instance, do not run the smoke script against them.
+3. In the repository root, opt in to synthetic writes on that instance:
+   ```bash
+   python3 scripts/deployment-smoke.py --allow-synthetic-writes \
+     --base-url http://127.0.0.1:3000 \
+     --api-url http://127.0.0.1:8080
+   ```
+   Pass signal: exit zero and JSON containing `"result": "passed"`. Recovery: Use your chosen ports if different; inspect the failing check and private service logs. Preserve the database for diagnosis rather than retrying against another endpoint.
 
-        // act
-        ExampleDTO result = exampleService.create(dto);
+The script accepts plain HTTP localhost origins only, checks status-only health and authentication through nginx, and creates/reads/updates/deletes a generated `SYNTHETIC-SMOKE-` project. Initial credentials are the migration defaults of a fresh database. The script keeps tokens in memory and attempts to delete its synthetic project. A failed run may leave synthetic rows; the disposable volume is the final cleanup boundary.
 
-        // assert
-        assertNotNull(result.getId());
-        assertEquals("test", result.getName());
-    }
-}
-```
+This check does not verify media storage, maps, offline device behavior, cloud deployment, backups or production access isolation.
 
-## Admin Dashboard (Vite/React)
+## Cleanup
 
-### Running Tests
+Type: how-to.
 
-```bash
-cd services/admin-web
+1. In the repository root, stop the confirmed evaluation project while preserving its volume:
+   ```bash
+   docker compose -p careloom-local-evaluation -f docker-compose.full.yml down
+   ```
+   Recovery: If unsure which project owns the resources, inspect `docker compose ls`; do not remove anything.
+2. Only after confirming every record in this exact project is disposable synthetic data, explicitly delete its volume:
+   ```bash
+   docker compose -p careloom-local-evaluation -f docker-compose.full.yml down --volumes
+   ```
+   Recovery: If there is any uncertainty about ownership or data, omit `--volumes` and ask the database owner to review. Do not use volume deletion as an upgrade, password rotation or migration repair.
 
-# Run tests in watch mode
-yarn test
+Use the same project name and configuration used at startup. For database-only native development, use `-p careloom-native-evaluation -f docker-compose.yml` instead.
 
-# Run tests once with coverage (CI mode)
-yarn test:ci
-```
+## Verification records
 
-### Test Stack
+Type: reference.
 
-- **Vitest** as the test runner
-- **React Testing Library** (`@testing-library/react`) for component tests
-- **MSW** (Mock Service Worker) for API mocking
-- **jsdom** as the test environment
-
-### Conventions
-
-- Test files go next to the component they test, named `*.test.tsx` or `*.test.ts`.
-- Use React Testing Library's `render`, `screen`, and `userEvent` for component interaction tests.
-- Mock API calls with MSW handlers rather than mocking Axios directly.
-- Setup file: `vitest-setup.js` (configures jsdom and Testing Library matchers).
-
-### Example
-
-```tsx
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
-import MyComponent from "./MyComponent";
-
-describe("MyComponent", () => {
-  it("renders the title", () => {
-    render(<MyComponent title="Hello" />);
-    expect(screen.getByText("Hello")).toBeInTheDocument();
-  });
-});
-```
-
-## Mobile App (Expo/React Native)
-
-### Running Tests
-
-```bash
-cd services/app
-
-# Run tests in watch mode
-yarn test
-
-# Run tests once with coverage (CI mode)
-yarn test:ci
-```
-
-### Test Stack
-
-- **Jest** with `jest-expo` preset
-- **React Native Testing Library** (`@testing-library/react-native`)
-- **React Test Renderer** for snapshot tests
-
-### Conventions
-
-- Test files go in `src/screens/__tests__/` or next to the component.
-- Setup file: `jest.setup.js` (mocks native modules and environment).
-- The `transformIgnorePatterns` in `package.json` are configured to handle React Native's module structure.
-
-### Example
-
-```jsx
-import { render, screen } from "@testing-library/react-native";
-import MyScreen from "../MyScreen";
-
-describe("MyScreen", () => {
-  it("renders correctly", () => {
-    render(<MyScreen />);
-    expect(screen.getByText("Welcome")).toBeTruthy();
-  });
-});
-```
-
-## Running All Tests
-
-From the repository root, you can run tests for all services:
-
-```bash
-# API
-cd services/api && ./gradlew test && cd ../..
-
-# Admin Dashboard
-cd services/admin-web && yarn test:ci && cd ../..
-
-# Mobile App
-cd services/app && yarn test:ci && cd ../..
-```
-
-## Code Quality Tools
-
-| Service | Linting | Formatting | Pre-commit |
-|---------|---------|-----------|------------|
-| API | Spotless (Google Java Format) | `./gradlew spotlessApply` | Lefthook |
-| Admin Web | ESLint | Prettier (`yarn format`) | Husky + lint-staged |
-| Mobile App | ESLint (Expo config) | Prettier | Husky + lint-staged |
+Record the source commit, tool versions, command, timezone, exit code, test/skipped counts and synthetic scope in the review receipt. Distinguish commands actually run from instructions inferred from configuration. A build or test result applies only to its tested tree; a source publication, hosted release or operational rollout requires its own evidence and approval.

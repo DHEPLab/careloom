@@ -19,11 +19,13 @@ Projects are the top-level container in CareLoom. Each project groups together a
 3. Enter a project name (e.g., "Yunnan Province Pilot") and an optional description.
 4. Click **Save**.
 
-All curricula, users, and families you create will be assigned to a project.
+Creating a project displays generated project-admin credentials. Store them privately; do not include them in screenshots, issues or shared logs. Sign out of the super-admin account and sign in as that project admin to see the project's curriculum and account menus. The super-admin view and project-admin view have different navigation.
+
+Recovery: If the project-admin credentials are missing or the expected menu is unavailable, ask the deployment operator to verify the account and role rather than creating duplicate projects.
 
 ## Step 3: Create Admin Accounts
 
-By default, CareLoom has one super-admin account. You should create separate accounts for each person who will manage the program.
+Use the generated project-admin account to configure the program. Create role-appropriate accounts for program staff through that project's account-management view; menu names may differ with the selected language. Keep each person's login separate.
 
 1. Click **Users** in the left sidebar.
 2. Click **Create User**.
@@ -54,7 +56,7 @@ For detailed CHW management, see [Managing CHWs](managing-chws.md).
 
 ## Step 5: Build Your First Curriculum
 
-A curriculum defines the content that CHWs will deliver during home visits. If you have an existing curriculum to upload, you can build it through the admin dashboard.
+A curriculum defines the structured content that CHWs deliver during home visits. The downloadable Healthy Future PDF is for reading and adaptation under its stated license. It does not populate CareLoom automatically. Create the sessions as modules and components in the admin dashboard, then review the published content on a test device.
 
 1. Click **Curriculum** in the left sidebar.
 2. Click **Create Curriculum**.
@@ -78,11 +80,11 @@ Admins can also view and manage family records from the admin dashboard under **
 
 The mobile app is an Android application. Distribute the APK to CHWs by:
 
-1. Obtaining the latest APK build from your technical team.
+1. Obtaining an APK built by your technical team for your own deployment. Confirm the configured API endpoint and build identifier before installation.
 2. Sharing it with CHWs via direct file transfer, a shared drive, or sideloading.
 3. Having each CHW install the APK and sign in with their credentials.
 
-The mobile app works offline. CHWs can conduct visits without an internet connection, and the app will sync data when connectivity is restored.
+Before field use, sign in online and prepare the assigned curriculum and family data on each device. Test the offline tasks you need with synthetic records, then reconnect and confirm they appear on the server. Keep the same account until pending work has synced. If you sign out with pending work, return to the original account and backend to sync it; ask your operator to review any ownership/recovery hold. Offline caching does not mean every setup or editing action works without connectivity. See [mobile offline behavior](../developer-guide/mobile-app.md#offline-support).
 
 ## What's Next
 

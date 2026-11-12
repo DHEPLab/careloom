@@ -2,28 +2,22 @@
 
 The mobile app is an Expo/React Native application targeting Android. CHWs use it to conduct home visits, register families, and sync data with the server.
 
-## Running Locally
+## Running locally
 
-```bash
-cd services/app
-yarn install
+Type: how-to.
 
-# Start Expo dev server
-npx expo start
-```
+1. In `services/app`, install locked dependencies:
+   ```bash
+   yarn install --frozen-lockfile
+   ```
+   Recovery: If installation fails, retain the lockfile and inspect the error. Check Node/Yarn versions in the [local setup guide](local-setup.md).
+2. In `services/app`, select an isolated test API endpoint and start Expo:
+   ```bash
+   EXPO_PUBLIC_API_URL=http://YOUR_TEST_HOST:8080 npx expo start
+   ```
+   Recovery: Replace the example host with the actual device-reachable test origin. If connectivity fails, verify the transport with the operator; do not fall back to an existing production endpoint.
 
-Options for testing:
-- **Android Emulator:** Press `a` to launch in a connected emulator (requires Android Studio)
-- **Physical Device:** Install Expo Go on an Android phone, scan the QR code
-- **Development Build:** Build a custom dev client for testing native modules
-
-Set the API URL to your local machine's network IP:
-
-```bash
-EXPO_PUBLIC_API_URL=http://192.168.1.100:8080 npx expo start
-```
-
-Do not use `localhost` -- the mobile device needs a network-accessible address.
+The device's `localhost` refers to the device itself. A loopback-only Docker API is not automatically reachable from a phone or emulator. Choose an explicit test transport. A compatible Android development build may be needed for this pinned Expo/native-module stack; do not assume the current Expo Go app can run it.
 
 ## Project Structure
 
@@ -35,8 +29,7 @@ services/app/
 │   ├── assets/          # Images, fonts, splash screen
 │   ├── cache/           # Offline data caching utilities
 │   ├── components/      # Shared React Native components
-│   ├── config.js        # API URL, app configuration
-│   ├── constants/       # App-wide constants
+│   ├── constants/       # App-wide constants and Config.js API endpoint
 │   ├── locales/         # i18n translations (en/, zh/)
 │   ├── models/          # Data model types
 │   ├── navigation/      # React Navigation route definitions
@@ -84,14 +77,21 @@ The app uses Redux for global state:
 
 Actions are defined in `actions.js` and dispatched from screen components.
 
-## Offline Support
+## Offline support
 
-The app is designed for use in areas with limited or no connectivity:
+Type: reference.
 
-1. **Curriculum data** is downloaded and cached locally when the CHW syncs.
-2. **Visits can be completed offline** -- all visit data is stored locally.
-3. **Data syncs automatically** when the device regains connectivity.
-4. Local storage uses `@react-native-async-storage/async-storage` and the cache utilities in `src/cache/`.
+Sign in online and prepare the assigned family/curriculum data before leaving connectivity. Cached content supports the implemented offline tasks; initial setup, all editor operations and every media asset are not guaranteed offline.
+
+- Family and visit queues retain entries until their corresponding upload is acknowledged. A failed upload leaves that entry and remaining work for retry.
+- Sync calls share an in-progress operation. Families are uploaded before queued visits; successful entries are removed individually rather than clearing the whole queue at startup.
+- Pending work is bound to the authenticated account and API endpoint. Signing out preserves it. Another account/backend cannot adopt that pending queue.
+- Old nonempty queues without recorded ownership are held for supervised recovery. Do not guess an owner, clear app storage or reinstall as a workaround.
+- A lost response after a server commit is still ambiguous. Client serialization does not provide server-side exactly-once processing. Reconcile suspected duplicates before submitting the same record again.
+
+After reconnecting, confirm the records reached the server. A network-connected icon or a dismissed message is not confirmation of completed synchronization. Keep the original account until pending work is resolved; contact your operator if the app reports an ownership/recovery hold.
+
+Local cache data uses AsyncStorage. These changes do not establish encrypted storage, backup, clinical performance or complete offline/reconnect readiness. Test the required workflow on the actual Android build with synthetic records before operational use.
 
 ## Navigation
 
@@ -104,64 +104,50 @@ Navigation configuration lives in `src/navigation/`.
 
 ## Building APKs
 
-### Preview Build (for testing)
+Type: explanation.
 
-Uses EAS Build to create a distributable APK:
+Android builds are deployment-specific. Before invoking a hosted EAS build, configure your own Expo owner/project identity and review `app.config.ts` and `eas.json`. The checked-in identities and production profile belong to the original project; a fork must not accidentally submit a build to that project or connect to its backend.
 
-```bash
-npx eas-cli build --profile preview --platform android
-```
+No prebuilt APK or platform-wide versioned release is established by these instructions. Record the source commit, profile, API endpoint and artifact checksum for each candidate you build. Component version strings are build labels, not an adopted release policy.
 
-This produces an APK (not AAB) suitable for sideloading onto test devices. See `eas.json` for profile configuration.
+### Build profiles
 
-### Development Build
+Type: reference.
 
-```bash
-npx eas-cli build --profile development --platform android
-```
+| Profile | Purpose | Endpoint requirement |
+|---------|---------|----------------------|
+| `preview` | Sideloadable test APK | Explicit isolated API origin; no production fallback |
+| `development` | Development/test Android build | Explicit isolated API origin; no production fallback |
+| `production` | Operator-reviewed release configuration | Review the configured production endpoint and app identity for your deployment |
 
-Creates a debug APK with dev tools enabled.
+Different Android package names permit side-by-side installation but do not isolate data when profiles point to the same backend. Public `EXPO_PUBLIC_*` values are embedded in the app and must not contain credentials.
 
-### Production Build
+### EAS commands
 
-```bash
-npx eas-cli build --profile production --platform android
-```
+Type: how-to.
 
-Creates a release build. The production profile uses:
-- ProGuard for code shrinking
-- Resource shrinking
-- Production API URL (`EXPO_PUBLIC_API_URL`)
+1. In your own EAS project and selected build environment, configure `EXPO_PUBLIC_API_URL` to your isolated device-reachable API origin for a preview or development build. Confirm the value is available both during local config evaluation and on the remote builder.
+   Recovery: If the endpoint is missing or selects the original production service, stop and correct the selected environment. Local shell variables alone do not establish remote-build configuration.
+2. In `services/app`, invoke the intended build profile only after the project identity and environment are verified:
+   ```bash
+   npx eas-cli build --profile preview --platform android
+   ```
+   Recovery: If EAS selects the wrong account/project or config validation fails, stop the build and resolve that identity/configuration error.
+3. For development work, use the same preparation with:
+   ```bash
+   npx eas-cli build --profile development --platform android
+   ```
+   Recovery: If the installed build cannot run the pinned native modules, inspect its build logs and runtime compatibility rather than changing dependency versions blindly.
 
-### Build Environment Variables
+Operational production builds use `--profile production` only after the operator has reviewed the endpoint, account, application identity, permissions and release artifact. Building and distributing are separate actions.
 
-Build-time variables are set in `eas.json` under each profile:
+## Device checks
 
-| Variable | Description |
-|----------|-------------|
-| `EXPO_PUBLIC_APP_NAME` | App display name |
-| `EXPO_PUBLIC_APP_VERSION` | Version string |
-| `EXPO_PUBLIC_API_URL` | Backend API URL |
-| `EXPO_PUBLIC_ANDROID_PACKAGE` | Android package name (different per profile to allow side-by-side installs) |
+Type: reference.
 
-## Running on a Device/Emulator
+Use a compatible Android emulator or test device and the deployment-specific build. Confirm sign-in, prepared curriculum display, offline record creation, failure/retry, reconnect confirmation and account-switch holds with synthetic records. Development tooling must not connect to a real research deployment for convenience.
 
-### Android Emulator
-
-1. Install Android Studio and create an AVD (Android Virtual Device).
-2. Start the emulator.
-3. Run `npx expo start` and press `a`.
-
-### Physical Device
-
-1. Enable Developer Options and USB Debugging on the device.
-2. Connect via USB.
-3. Run `npx expo start` and press `a`.
-
-Or use Expo Go:
-1. Install Expo Go from the Google Play Store.
-2. Run `npx expo start`.
-3. Scan the QR code with the Expo Go app.
+The local Compose ports bind to loopback. A real device requires an operator-reviewed test transport and a matching API URL; changing the database bind address is not a solution.
 
 ## Running Tests
 
@@ -170,7 +156,7 @@ Or use Expo Go:
 yarn test
 
 # Run tests once with coverage (CI mode)
-yarn test:ci
+yarn test:ci --runInBand
 ```
 
 Tests use Jest with the `jest-expo` preset and React Native Testing Library.
