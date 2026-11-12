@@ -16,6 +16,12 @@ services:
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: docker
+      - key: GOOGLE_MAP_API_KEY
+        value: not-configured
+      - key: AWS_REGION
+        value: us-east-1
+      - key: AWS_EC2_METADATA_DISABLED
+        value: "true"
       - key: SPRING_DATASOURCE_URL
         sync: false  # Set manually — Render has no managed MySQL
       - key: SPRING_DATASOURCE_USERNAME
@@ -32,8 +38,7 @@ services:
     dockerContext: services/admin-web
     plan: starter
     envVars:
+      # Set a full reachable origin including scheme and port, for example
+      # http://careloom-api:8080. Cloud deployment is not acceptance-tested.
       - key: API_URL
-        fromService:
-          name: careloom-api
-          type: web
-          property: hostport
+        sync: false

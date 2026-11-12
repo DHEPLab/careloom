@@ -86,6 +86,7 @@ public class JWTSecurityConfig extends WebSecurityConfigurerAdapter {
         .and()
         .authorizeRequests()
         .antMatchers(
+            "/actuator/health",
             "/api/authenticate",
             "/admin/authenticate",
             "/api/files/**",
