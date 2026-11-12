@@ -4,11 +4,11 @@ This guide covers essential security practices for running CareLoom in productio
 
 ## Change Default Passwords
 
-CareLoom ships with default credentials that must be changed before going live.
+The repository contains public evaluation credentials and historical migration accounts. They do not establish a known first-login password or operational readiness. Use your operator-provisioned account; local evaluation can explicitly create a new bootstrap account. Disable bootstrap after creation and keep the evaluation instance on loopback.
 
 ### Admin Dashboard Password
 
-1. Log in with the default credentials (`admin` / `admin`).
+1. Log in with your operator-provisioned account.
 2. Go to the profile area (top-right corner).
 3. Click **Change Password**.
 4. Set a strong password (at least 12 characters, mix of letters, numbers, and symbols).
@@ -38,10 +38,10 @@ The JWT secret key signs authentication tokens. The checked-in evaluation exampl
 Generate a secure key:
 
 ```bash
-openssl rand -hex 32
+openssl rand -base64 64 | tr -d '\n'
 ```
 
-For a new deployment, set the generated value as `JWT_SECRET_KEY` in private configuration before startup. For an existing deployment, have the operator coordinate the key change and recreate the API container with the new environment. A key change affects existing tokens; a plain container restart does not reload Compose configuration.
+The current JJWT API expects a Base64-encoded signing key. For a new deployment, set the generated value as `JWT_SECRET_KEY` in private configuration before startup. For an existing deployment, have the operator coordinate the key change and recreate the API container with the new environment. A key change affects existing tokens; a plain container restart does not reload Compose configuration.
 
 ## HTTPS and endpoint configuration
 

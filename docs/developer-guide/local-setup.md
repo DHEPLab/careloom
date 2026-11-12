@@ -32,11 +32,14 @@ Type: how-to.
    SPRING_DATASOURCE_URL='jdbc:mysql://127.0.0.1:3306/careloom?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf-8' \
    SPRING_DATASOURCE_USERNAME=careloom \
    SPRING_DATASOURCE_PASSWORD=local-evaluation-user-change-me \
-   JWT_SECRET_KEY=local-evaluation-signing-key-change-before-any-real-use \
+   JWT_SECRET_KEY="$(openssl rand -base64 64 | tr -d '\n')" \
+   CARELOOM_BOOTSTRAP_ADMIN_ENABLED=true \
+   CARELOOM_BOOTSTRAP_ADMIN_USERNAME=evaluation_admin \
+   CARELOOM_BOOTSTRAP_ADMIN_PASSWORD=evaluation-only-change-before-real-use \
    AWS_REGION=us-east-1 AWS_EC2_METADATA_DISABLED=true \
    ./gradlew bootRun
    ```
-   Recovery: If your `.env` differs, supply matching values here, including `DB_PORT` in the JDBC URL. If Java is unavailable, use the full Docker path. Do not copy account-specific settings from an existing research deployment.
+   Recovery: If your `.env` differs, supply matching values here, including `DB_PORT` in the JDBC URL. After the first account creation, rerun without the bootstrap opt-in. If a username collision is reported, use the original credentials and disable bootstrap; do not reset the database. If Java is unavailable, use the full Docker path. Do not copy account-specific settings from an existing research deployment.
 3. On the local machine, check `http://127.0.0.1:8080/actuator/health`.
    Recovery: If health fails, inspect API startup logs and the scoped database logs. Do not delete a volume or edit past migrations to bypass an error.
 

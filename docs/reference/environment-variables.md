@@ -26,7 +26,7 @@ Type: reference.
 | `SPRING_PROFILES_ACTIVE=docker` | Reads the datasource and optional service settings below; also usable for native local development |
 | `SPRING_DATASOURCE_URL` | Full JDBC URL in the docker profile |
 | `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` | Existing database credentials used by the API |
-| `JWT_SECRET_KEY` | Signing key; required by the application; example is evaluation-only |
+| `JWT_SECRET_KEY` | Base64-encoded signing key; required by the current JJWT API; example is public and evaluation-only |
 | `AWS_REGION` | AWS client region; local Compose defaults to `us-east-1` |
 | `AWS_EC2_METADATA_DISABLED=true` | Prevents metadata credential discovery in local evaluation |
 | `AWS_S3_BUCKET` | Bucket owned/configured by the operator; local default is an unusable placeholder |
@@ -35,6 +35,12 @@ Type: reference.
 | `DATABASE_URL` | Legacy base-profile JDBC setting; use the explicit docker datasource variables for the documented local path |
 
 Media and map operations require additional operator-owned service configuration. Do not copy credentials or bucket names from another deployment. The local health check exposes status only at `/actuator/health`.
+
+## First-install administrator
+
+Type: reference.
+
+`CARELOOM_BOOTSTRAP_ADMIN_ENABLED` defaults to `false` and is available only in the Docker application profile. A new disposable instance can explicitly enable it with a chosen `CARELOOM_BOOTSTRAP_ADMIN_USERNAME` and a 12-64 character `CARELOOM_BOOTSTRAP_ADMIN_PASSWORD`. It creates a new super-admin only; a conflicting username stops startup without changing that account. An unchanged, active super-admin with matching credentials can restart idempotently. Disable the flag after the first creation and recreate the API container. These variables do not recover or rotate existing credentials.
 
 ## Admin dashboard
 

@@ -15,7 +15,7 @@ Run each command from the repository root. Use Docker Engine with Compose v2 or 
    cp .env.example .env
    ```
    Recovery: If `.env` already exists, review it rather than overwriting it. Confirm it does not point at an existing research database or service.
-2. In `.env`, choose unused `ADMIN_PORT` and `API_PORT` values and review the evaluation-only database/JWT settings.
+2. In `.env`, choose unused `ADMIN_PORT` and `API_PORT` values and review the evaluation-only database/JWT settings. For this new disposable instance, set `CARELOOM_BOOTSTRAP_ADMIN_ENABLED=true` and choose a new `CARELOOM_BOOTSTRAP_ADMIN_USERNAME` and `CARELOOM_BOOTSTRAP_ADMIN_PASSWORD` (12-64 characters).
    Recovery: If ports are occupied, choose different ports for this project. Do not stop another project's services.
 3. In the repository root, validate configuration for a unique Compose project:
    ```bash
@@ -36,7 +36,9 @@ Run each command from the repository root. Use Docker Engine with Compose v2 or 
 6. On the local machine, open the dashboard at `http://127.0.0.1:3000` and check API status at `http://127.0.0.1:8080/actuator/health` when using the example ports.
    Recovery: If you changed ports, use the values in `.env`. If the dashboard loads but login fails, inspect nginx/API logs and the `/admin/` and `/api/` proxy path.
 
-The local bootstrap account is `admin` / `admin`. These credentials and the example signing key are for isolated evaluation. Do not expose this instance or put real family data in it. See [First Setup](../implementer-guide/first-setup.md) for program configuration after validation.
+Log in using the bootstrap username and password you selected. After the account has been created, set `CARELOOM_BOOTSTRAP_ADMIN_ENABLED=false` in `.env` and apply it with `docker compose -p careloom-local-evaluation -f docker-compose.full.yml up -d --no-deps api`. Bootstrap only creates a new account; it never changes an existing account. An existing account is accepted only when it is still an active super-admin with the same configured credentials; a conflicting username stops bootstrap. Use the original credentials and disable bootstrap before restarting an initialized instance. Do not delete a database to resolve a collision.
+
+These credentials and the example signing key are for isolated evaluation. Do not expose this instance or put real family data in it. See [First Setup](../implementer-guide/first-setup.md) for program configuration after validation.
 
 ## Network and feature boundaries
 

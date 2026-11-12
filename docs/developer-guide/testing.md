@@ -70,13 +70,15 @@ Type: how-to.
    Recovery: If the ports belong to another instance, do not run the smoke script against them.
 3. In the repository root, opt in to synthetic writes on that instance:
    ```bash
+   CARELOOM_BOOTSTRAP_ADMIN_USERNAME=evaluation_admin \
+   CARELOOM_BOOTSTRAP_ADMIN_PASSWORD=evaluation-only-change-before-real-use \
    python3 scripts/deployment-smoke.py --allow-synthetic-writes \
      --base-url http://127.0.0.1:3000 \
      --api-url http://127.0.0.1:8080
    ```
    Pass signal: exit zero and JSON containing `"result": "passed"`. Recovery: Use your chosen ports if different; inspect the failing check and private service logs. Preserve the database for diagnosis rather than retrying against another endpoint.
 
-The script accepts plain HTTP localhost origins only, checks status-only health and authentication through nginx, and creates/reads/updates/deletes a generated `SYNTHETIC-SMOKE-` project. Initial credentials are the migration defaults of a fresh database. The script keeps tokens in memory and attempts to delete its synthetic project. A failed run may leave synthetic rows; the disposable volume is the final cleanup boundary.
+The script accepts plain HTTP localhost origins only, checks status-only health and authentication through nginx, and creates/reads/updates/deletes a generated `SYNTHETIC-SMOKE-` project. The public synthetic credentials above match `.env.example`; if you selected different values, supply those matching values privately. The smoke check requires explicit bootstrap credentials and never guesses migration passwords. The script keeps tokens in memory and attempts to delete its synthetic project. A failed run may leave synthetic rows; the disposable volume is the final cleanup boundary.
 
 This check does not verify media storage, maps, offline device behavior, cloud deployment, backups or production access isolation.
 

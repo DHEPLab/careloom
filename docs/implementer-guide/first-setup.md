@@ -5,10 +5,8 @@ After deploying CareLoom, follow these steps to get your program running.
 ## Step 1: Log In to the Admin Dashboard
 
 1. Open your browser and go to the admin dashboard URL (e.g., `http://localhost:3000`).
-2. Log in with the default credentials:
-   - **Username:** `admin`
-   - **Password:** `admin`
-3. **Change the default password immediately.** Go to the profile area in the top-right corner and select "Change Password."
+2. Log in using the credentials provided by your deployment operator. For a new local evaluation instance, use the account explicitly created through the [bootstrap setup](../getting-started/self-hosted-deploy.md#start-an-isolated-instance).
+3. Confirm the operator has disabled first-install bootstrap after account creation. Do not assume `admin` / `admin` works on a fresh database. Keep evaluation credentials out of an operational deployment.
 
 ## Step 2: Create a Project
 
