@@ -15,7 +15,7 @@ import {
   netInfo,
   restoreToken,
 } from "./actions";
-import { uploadOfflineBabies } from "./cache/uploadData";
+import { syncOfflineData } from "./cache/uploadData";
 
 import Http from "./utils/http";
 import Navigator from "./navigation/Navigator";
@@ -47,13 +47,12 @@ export default function App(props) {
         const net = await NetInfo.fetch();
 
         // Restore token from async storage
-        const token = await Http.token();
-        store.dispatch(restoreToken(token));
+        const { token, account } = await Http.session();
 
         if (!net.isInternetReachable) {
+          store.dispatch(restoreToken(account ? token : null));
           return ToastAndroid.show(t("App:offlineMessage"), ToastAndroid.LONG);
         }
-        uploadOfflineBabies();
 
         // pre download offline assets
         Asset.fromModule(
@@ -61,15 +60,32 @@ export default function App(props) {
         ).downloadAsync();
         try {
           // Check whether the token is valid
-          token && (await Http.get("/api/account/profile"));
+          if (token) {
+            const profile = await Http.get("/api/account/profile");
+            await Http.bindAccount(profile.id);
+            store.dispatch(restoreToken(token));
+            const sync = await syncOfflineData();
+            if (sync.failed || sync.held) {
+              ToastAndroid.show(t("App:offlineSyncPending"), ToastAndroid.LONG);
+            }
+          }
         } catch (e) {
           // Token is invalid
           store.dispatch(restoreToken(null));
           throw e;
         }
       } catch (e) {
+        if (e.code === "OFFLINE_ACCOUNT_MISMATCH") {
+          ToastAndroid.show(
+            t("SignIn:offlineAccountRecovery"),
+            ToastAndroid.LONG,
+          );
+        }
+        if (e.code === "OFFLINE_OWNER_UNKNOWN") {
+          ToastAndroid.show(t("SignIn:offlineOwnerUnknown"), ToastAndroid.LONG);
+        }
         // We might want to provide this error information to an error reporting service
-        console.warn(e);
+        console.warn("CareLoom startup could not complete");
       } finally {
         loadingComplete();
         SplashScreen.hideAsync();

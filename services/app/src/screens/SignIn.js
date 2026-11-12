@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { useDispatch } from "react-redux";
 import { Formik } from "formik";
 import { useTranslation } from "react-i18next";
@@ -22,20 +22,39 @@ export default function SignIn() {
   const [visible, openSuccessMessage] = useBoolState();
   const [badCredentials, onBadCredentials, resetBadCredentials] =
     useBoolState();
+  const [accountError, setAccountError] = useState(false);
+  const signingIn = useRef(false);
 
   function onSubmit(values) {
+    if (signingIn.current) return;
+    signingIn.current = true;
     resetBadCredentials();
+    setAccountError(false);
     Http.post("/api/authenticate", values)
-      .then((data) => {
-        Http.auth(data.idToken);
+      .then(async (data) => {
+        await Http.auth(data.idToken);
+        const profile = await Http.get("/api/account/profile");
+        await Http.bindAccount(profile.id);
         openSuccessMessage();
         dispatch(signIn(data));
       })
-      .catch((error) => {
+      .catch(async (error) => {
+        await Http.signOut();
+        if (error.code === "OFFLINE_ACCOUNT_MISMATCH") {
+          setAccountError("offlineAccountRecovery");
+          return;
+        }
+        if (error.code === "OFFLINE_OWNER_UNKNOWN") {
+          setAccountError("offlineOwnerUnknown");
+          return;
+        }
         if (error.status === 401) {
           onBadCredentials();
           return;
         }
+      })
+      .finally(() => {
+        signingIn.current = false;
       });
   }
 
@@ -65,6 +84,7 @@ export default function SignIn() {
             {badCredentials && (
               <BadCredentials>{t("badCredentials")}</BadCredentials>
             )}
+            {accountError && <BadCredentials>{t(accountError)}</BadCredentials>}
             <Button
               disabled={!values.username || !values.password}
               size="large"

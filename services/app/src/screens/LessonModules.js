@@ -84,12 +84,24 @@ export default function LessonModules({ navigation, route }) {
           nextModuleIndex: nextModule,
           questionnaireRecords: answers,
         });
-        Storage.setAnswers(params?.visitId, []);
-        Storage.committedVisitStatus();
-        Storage.setNextModule(0);
+        const acknowledged = await Storage.committedVisitStatus(
+          params?.visitId,
+          uncommitted[params?.visitId],
+          answersData,
+        );
+        if (acknowledged) {
+          if (!(await Storage.pendingOfflineRecords()))
+            await Storage.setNextModule(0);
+        }
       } else {
         // from Home screen, offline mode, save visit status to storage
-        await Storage.setUncommittedVisitStatus(params?.visitId, "DONE");
+        const session = await Http.session();
+        await Storage.setUncommittedVisitStatus(
+          params?.visitId,
+          "DONE",
+          undefined,
+          session.account,
+        );
       }
     }
 

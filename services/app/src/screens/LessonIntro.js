@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import Visits from "../utils/visit";
 import storage from "../cache/storage";
+import Http from "../utils/http";
 import { Colors } from "../constants";
 import { styled } from "../utils/styled";
 import {
@@ -20,11 +21,21 @@ export default function LessonIntro({ navigation, route }) {
   const { t } = useTranslation();
   useEffect(() => {
     if (!route.params.preview) {
-      storage.setUncommittedVisitStatus(
-        route.params?.visitId,
-        "UNDONE",
-        Visits.formatDateTime(new Date()),
-      );
+      Http.session()
+        .then((session) =>
+          storage.setUncommittedVisitStatus(
+            route.params?.visitId,
+            "UNDONE",
+            Visits.formatDateTime(new Date()),
+            session.account,
+          ),
+        )
+        .catch(() =>
+          ToastAndroid.show(
+            t("SignIn:offlineAccountRecovery"),
+            ToastAndroid.LONG,
+          ),
+        );
       if (route.params.continue) {
         storage.setNextModule(route.params.nextModuleIndex);
       }

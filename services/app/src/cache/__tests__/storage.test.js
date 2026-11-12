@@ -45,12 +45,19 @@ it("should set next module index", async () => {
 });
 
 it("should save visit status", async () => {
+  await storage.activateOfflineAccount("https://synthetic.invalid|1");
   await storage.setUncommittedVisitStatus(
     1,
     "UNDONE",
     Visits.formatDateTime(new Date("2020-01-01T10:00:00")),
+    "https://synthetic.invalid|1",
   );
-  await storage.setUncommittedVisitStatus(2, "DONE");
+  await storage.setUncommittedVisitStatus(
+    2,
+    "DONE",
+    undefined,
+    "https://synthetic.invalid|1",
+  );
   const { result } = renderHook(() => storage.useUncommittedVisitStatus());
   await waitFor(() => {
     const [status] = result.current;

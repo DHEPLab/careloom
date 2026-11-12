@@ -5,15 +5,46 @@ import Config from "../constants/Config";
 import store from "../store";
 import { openGlobalSubmitErrorMessage, restoreToken } from "@/actions";
 import i18next from "i18next";
+import offlineStorage from "../cache/storage";
 
 // fetch timeout 15s
 const timeout = 15000;
 const Host = Config.apiHost;
 let Token;
+let Account;
 
-AsyncStorage.getItem("JWT_TOKEN", (_, result) => {
-  Token = result;
-});
+const sessionReady = (async () => {
+  const saved = await AsyncStorage.getItem("CARELOOM_SESSION");
+  if (saved) {
+    let session;
+    try {
+      session = JSON.parse(saved);
+    } catch (_) {
+      return;
+    }
+    // Do not forward credentials to a newly configured backend. Keep the saved
+    // session and offline queues held for the original deployment.
+    if (
+      Host &&
+      typeof session?.account === "string" &&
+      session.account.startsWith(`${Host}|`) &&
+      typeof session.token === "string"
+    ) {
+      Token = session.token;
+      Account = session.account;
+    }
+  } else {
+    // Legacy tokens have no recorded backend. Require an explicit new login.
+    Token = null;
+  }
+})();
+
+async function clearAuthentication() {
+  Token = "";
+  Account = null;
+  await AsyncStorage.removeItem("CARELOOM_SESSION");
+  await AsyncStorage.removeItem("JWT_TOKEN");
+}
 
 export function responseContentTypeJSON(response) {
   return (
@@ -22,13 +53,13 @@ export function responseContentTypeJSON(response) {
   );
 }
 
-async function cleanToken() {
+async function cleanToken(requestToken) {
+  if (requestToken !== Token) return;
   store.dispatch(restoreToken(null));
-  Token = "";
-  await AsyncStorage.removeItem("JWT_TOKEN");
+  await clearAuthentication();
 }
 
-async function onResponseError(url, status, data) {
+async function onResponseError(url, status, data, requestToken) {
   let msg = i18next.t("App:networkError");
   switch (status) {
     case 502:
@@ -38,7 +69,7 @@ async function onResponseError(url, status, data) {
     case 404:
       return;
     case 401:
-      cleanToken();
+      cleanToken(requestToken);
       return;
     default:
       if (data.violations) {
@@ -47,11 +78,11 @@ async function onResponseError(url, status, data) {
         msg = data.detail;
       }
   }
-  console.warn(url, msg, data);
+  console.warn("CareLoom request failed", status);
   ToastAndroid.show(msg, ToastAndroid.LONG);
 }
 
-function request(fetchPromise, method, { silence, url }) {
+function request(fetchPromise, method, { silence, url, token }) {
   return new Promise((resolve, reject) => {
     fetchPromise
       .then(async (response) => {
@@ -61,7 +92,7 @@ function request(fetchPromise, method, { silence, url }) {
         if (response.ok) {
           resolve(data);
         } else {
-          !silence && onResponseError(url, response.status, data);
+          !silence && onResponseError(url, response.status, data, token);
           reject(data);
         }
       })
@@ -77,7 +108,7 @@ function request(fetchPromise, method, { silence, url }) {
           }
         }
         reject(error);
-        console.warn(url + JSON.stringify(error));
+        console.warn("CareLoom request failed", method);
       });
   });
 }
@@ -94,29 +125,52 @@ function objToQueryString(obj) {
 
 export default {
   async auth(token) {
-    await AsyncStorage.setItem("JWT_TOKEN", token);
+    await sessionReady;
+    // Do not persist a new token alongside the previous account's identity.
     Token = token;
+    Account = null;
   },
-  async token() {
-    return await AsyncStorage.getItem("JWT_TOKEN");
-  },
-  async signOut() {
+  async bindAccount(profileId) {
+    await sessionReady;
+    if (!Token || profileId === undefined || profileId === null || !Host) {
+      throw new Error("Authenticated account and API endpoint are required.");
+    }
+    const account = `${Host}|${profileId}`;
+    await offlineStorage.activateOfflineAccount(account);
+    await AsyncStorage.setItem(
+      "CARELOOM_SESSION",
+      JSON.stringify({ token: Token, account }),
+    );
+    Account = account;
     await AsyncStorage.removeItem("JWT_TOKEN");
   },
-  post(url, body) {
+  async session() {
+    await sessionReady;
+    return { token: Token, account: Account };
+  },
+  async token() {
+    await sessionReady;
+    return Token;
+  },
+  async signOut() {
+    await sessionReady;
+    await clearAuthentication();
+  },
+  post(url, body, options = {}) {
+    const requestToken = options.token ?? Token;
     return request(
       fetch(`${Host}${url}`, {
         method: "POST",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          Authorization: `Bearer ${Token}`,
+          Authorization: `Bearer ${requestToken}`,
         },
         body: JSON.stringify(body),
         timeout,
       }),
       "POST",
-      { url },
+      { url, token: requestToken },
     );
   },
   put(url, body) {
@@ -132,7 +186,7 @@ export default {
         timeout,
       }),
       "PUT",
-      { url },
+      { url, token: Token },
     );
   },
   silencePut(url, body) {
@@ -148,7 +202,7 @@ export default {
         timeout,
       }),
       "PUT",
-      { silence: true, url },
+      { silence: true, url, token: Token },
     );
   },
   get(url, params) {
@@ -162,7 +216,7 @@ export default {
         timeout,
       }),
       "GET",
-      { url },
+      { url, token: Token },
     );
   },
   silenceGet(url, params) {
@@ -176,7 +230,7 @@ export default {
         timeout,
       }),
       "GET",
-      { silence: true, url },
+      { silence: true, url, token: Token },
     );
   },
   delete(url) {
@@ -190,7 +244,7 @@ export default {
         timeout,
       }),
       "DELETE",
-      { url },
+      { url, token: Token },
     );
   },
 };

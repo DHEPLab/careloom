@@ -91,11 +91,17 @@ const Home: React.FC<Props> = ({ navigation }) => {
         nextModuleIndex,
         questionnaireRecords: answersData?.answers,
       })
-        .then(() => {
-          Storage.setNextVisit({});
-          Storage.committedVisitStatus();
-          Storage.setAnswers(id, {});
-          Storage.setNextModule(0);
+        .then(async () => {
+          const acknowledged = await Storage.committedVisitStatus(
+            id,
+            uncommitted[id],
+            answersData,
+          );
+          if (acknowledged) {
+            await Storage.setNextVisit({});
+            if (!(await Storage.pendingOfflineRecords()))
+              await Storage.setNextModule(0);
+          }
         })
         .catch(() => openSubmitErrorMessage());
     }

@@ -1,9 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, RefreshControl, TextInput, View } from "react-native";
+import {
+  FlatList,
+  RefreshControl,
+  TextInput,
+  View,
+  ToastAndroid,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { AntDesign, MaterialIcons } from "@expo/vector-icons";
 import storage from "../cache/storage";
-import { uploadOfflineBabies, uploadOfflineVisits } from "../cache/uploadData";
+import { syncOfflineData } from "../cache/uploadData";
 
 import http from "../utils/http";
 import { px2dp, styled } from "../utils/styled";
@@ -45,8 +51,17 @@ export default function Babies({ navigation }) {
       if (search.page === 0) {
         startRefresh();
         setContents([]);
-        uploadOfflineVisits();
-        await uploadOfflineBabies();
+        try {
+          const sync = await syncOfflineData();
+          if (sync.failed || sync.held) {
+            ToastAndroid.show(t("App:offlineSyncPending"), ToastAndroid.LONG);
+          }
+        } catch (_) {
+          ToastAndroid.show(
+            t("SignIn:offlineAccountRecovery"),
+            ToastAndroid.LONG,
+          );
+        }
       } else {
         startLoad();
       }

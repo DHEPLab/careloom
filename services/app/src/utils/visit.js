@@ -168,10 +168,10 @@ export function uploadVisitLocation(babyId, visitId) {
           longitude,
           latitude,
         });
-        console.log("getLocation", longitude, latitude);
+        console.log("Visit location upload requested");
       });
     } catch (e) {
-      console.log("Error while trying to get location: ", e);
+      console.log("Visit location unavailable");
     }
   })();
 }
