@@ -145,8 +145,10 @@ export default {
   },
 };
 
-export function uploadVisitLocation(babyId, visitId) {
-  (async () => {
+export async function uploadVisitLocation(babyId, visitId, capturedSession) {
+  try {
+    const session = capturedSession || (await Http.session());
+    if (!session.account || !session.token) return;
     const hasEnableLocation = await Location.hasServicesEnabledAsync();
     if (!hasEnableLocation) {
       ToastAndroid.show(
@@ -155,23 +157,25 @@ export function uploadVisitLocation(babyId, visitId) {
       );
       return;
     }
-    try {
-      console.log("start getLocation");
-      Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-        timeInterval: 5000,
-      }).then((location) => {
-        const { latitude, longitude } = location.coords;
-        Http.post("/api/visits/upload/location", {
-          babyId,
-          visitId,
-          longitude,
-          latitude,
-        });
-        console.log("Visit location upload requested");
-      });
-    } catch (e) {
-      console.log("Visit location unavailable");
-    }
-  })();
+    const location = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Highest,
+      timeInterval: 5000,
+    });
+    const current = await Http.session();
+    if (current.account !== session.account || current.token !== session.token)
+      return;
+    const { latitude, longitude } = location.coords;
+    await Http.post(
+      "/api/visits/upload/location",
+      {
+        babyId,
+        visitId,
+        longitude,
+        latitude,
+      },
+      { token: session.token },
+    );
+  } catch (_) {
+    console.warn("Visit location unavailable");
+  }
 }

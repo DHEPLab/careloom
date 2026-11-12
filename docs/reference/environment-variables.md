@@ -30,7 +30,7 @@ Type: reference.
 | `AWS_REGION` | AWS client region; local Compose defaults to `us-east-1` |
 | `AWS_EC2_METADATA_DISABLED=true` | Prevents metadata credential discovery in local evaluation |
 | `AWS_S3_BUCKET` | Bucket owned/configured by the operator; local default is an unusable placeholder |
-| `GOOGLE_MAP_API_KEY` | Map service configuration; blank by default in local Docker profile |
+| `GOOGLE_MAP_API_KEY` | Map service configuration; local Compose uses `not-configured` until you supply your own key. This placeholder does not enable maps. |
 | `API_PORT` | Full Compose API host port; loopback only; default 8080 |
 | `DATABASE_URL` | Legacy base-profile JDBC setting; use the explicit docker datasource variables for the documented local path |
 

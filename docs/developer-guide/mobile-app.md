@@ -85,6 +85,7 @@ Sign in online and prepare the assigned family/curriculum data before leaving co
 
 - Family and visit queues retain entries until their corresponding upload is acknowledged. A failed upload leaves that entry and remaining work for retry.
 - Sync calls share an in-progress operation. Families are uploaded before queued visits; successful entries are removed individually rather than clearing the whole queue at startup.
+- Home submits one retained visit status per refresh. Repeat refresh as needed and verify each expected visit on the server; this path does not drain all pending statuses in one operation.
 - Pending work is bound to the authenticated account and API endpoint. Signing out preserves it. Another account/backend cannot adopt that pending queue.
 - Old nonempty queues without recorded ownership are held for supervised recovery. Do not guess an owner, clear app storage or reinstall as a workaround.
 - A lost response after a server commit is still ambiguous. Client serialization does not provide server-side exactly-once processing. Reconcile suspected duplicates before submitting the same record again.

@@ -81,3 +81,24 @@ it("ignores a late unauthorized response from an older session token", async () 
     "synthetic-new-token",
   );
 });
+
+it.each(["put", "silencePut"])(
+  "%s keeps the explicitly captured request credentials",
+  async (method) => {
+    http = require("../http").default;
+    await http.auth("synthetic-old-token");
+    await http.bindAccount(1);
+    const captured = await http.session();
+    await http.auth("synthetic-new-token");
+    await http.bindAccount(2);
+    await http[method](
+      "/api/visits/7/status",
+      { synthetic: true },
+      { token: captured.token },
+    );
+    expect(global.fetch.mock.calls.at(-1)[1].headers.Authorization).toBe(
+      "Bearer synthetic-old-token",
+    );
+    expect((await http.session()).token).toBe("synthetic-new-token");
+  },
+);

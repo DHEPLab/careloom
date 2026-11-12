@@ -62,8 +62,12 @@ it("should save visit status", async () => {
   await waitFor(() => {
     const [status] = result.current;
     expect(status).toStrictEqual({
-      1: { status: "UNDONE", startTime: "2020-01-01T10:00:00" },
-      2: { status: "DONE" },
+      1: {
+        status: "UNDONE",
+        startTime: "2020-01-01T10:00:00",
+        _offlineRevision: expect.any(String),
+      },
+      2: { status: "DONE", _offlineRevision: expect.any(String) },
     });
   });
 });

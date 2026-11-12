@@ -54,9 +54,9 @@ export default function LessonModules({ navigation, route }) {
     queryQuestionnaire();
   }, [lesson]);
 
-  function onUploadVisitLocation() {
+  function onUploadVisitLocation(session) {
     if (!params.preview && babyId) {
-      uploadVisitLocation(babyId, params.visitId);
+      uploadVisitLocation(babyId, params.visitId, session);
     }
   }
 
@@ -65,29 +65,49 @@ export default function LessonModules({ navigation, route }) {
   }
 
   async function finish() {
+    const session = await Http.session();
     const answersData = await Storage.getAnswers(params?.visitId);
     if (!answersData && questionnaire) {
       openErrorMessage();
       return;
     }
-    onUploadVisitLocation();
     const answers = answersData?.answers;
     if (!params.preview) {
+      const current = await Http.session();
+      if (
+        current.account !== session.account ||
+        current.token !== session.token
+      )
+        return;
+      if (!session.account || !session.token) return;
+      onUploadVisitLocation(session);
       if (isConnected) {
+        await Storage.requireOfflineAccount(session.account);
         const uncommitted = await Storage.getUncommittedVisitStatus();
+        const current = await Http.session();
+        if (
+          current.account !== session.account ||
+          current.token !== session.token
+        )
+          return;
         // from Visit screen, online mode, direct submit
-        await Http.put(`/api/visits/${params?.visitId}/status`, {
-          visitStatus: "DONE",
-          startTime: moment(uncommitted[params?.visitId].startTime).format(
-            "YYYY-MM-DDTHH:mm:ssZ",
-          ),
-          nextModuleIndex: nextModule,
-          questionnaireRecords: answers,
-        });
+        await Http.put(
+          `/api/visits/${params?.visitId}/status`,
+          {
+            visitStatus: "DONE",
+            startTime: moment(uncommitted[params?.visitId].startTime).format(
+              "YYYY-MM-DDTHH:mm:ssZ",
+            ),
+            nextModuleIndex: nextModule,
+            questionnaireRecords: answers,
+          },
+          { token: session.token },
+        );
         const acknowledged = await Storage.committedVisitStatus(
           params?.visitId,
           uncommitted[params?.visitId],
           answersData,
+          session.account,
         );
         if (acknowledged) {
           if (!(await Storage.pendingOfflineRecords()))
@@ -95,7 +115,6 @@ export default function LessonModules({ navigation, route }) {
         }
       } else {
         // from Home screen, offline mode, save visit status to storage
-        const session = await Http.session();
         await Storage.setUncommittedVisitStatus(
           params?.visitId,
           "DONE",

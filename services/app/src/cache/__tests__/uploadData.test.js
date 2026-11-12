@@ -133,8 +133,12 @@ it("blocks account switching while visit status work remains and acknowledges on
     storage.activateOfflineAccount("https://synthetic.invalid|2"),
   ).rejects.toMatchObject({ code: "OFFLINE_ACCOUNT_MISMATCH" });
   await storage.setUncommittedVisitStatus(1, "DONE", undefined, account);
-  expect(await storage.committedVisitStatus("1", snapshot[1])).toBe(false);
-  expect(await storage.committedVisitStatus("2", snapshot[2])).toBe(true);
+  expect(
+    await storage.committedVisitStatus("1", snapshot[1], undefined, account),
+  ).toBe(false);
+  expect(
+    await storage.committedVisitStatus("2", snapshot[2], undefined, account),
+  ).toBe(true);
   expect(Object.keys(await storage.getUncommittedVisitStatus())).toEqual(["1"]);
   expect((await storage.getUncommittedVisitStatus())[1].status).toBe("DONE");
 });
@@ -158,9 +162,9 @@ it("retains questionnaire answers changed while a visit acknowledgement was in f
   const snapshot = (await storage.getUncommittedVisitStatus())[1];
   const oldAnswers = await storage.getAnswers(1);
   await storage.setAnswers(1, { answers: ["Synthetic new answer"] }, account);
-  expect(await storage.committedVisitStatus("1", snapshot, oldAnswers)).toBe(
-    false,
-  );
+  expect(
+    await storage.committedVisitStatus("1", snapshot, oldAnswers, account),
+  ).toBe(false);
   expect((await storage.getAnswers(1)).answers).toEqual([
     "Synthetic new answer",
   ]);
@@ -168,4 +172,44 @@ it("retains questionnaire answers changed while a visit acknowledgement was in f
   await expect(
     storage.activateOfflineAccount("https://synthetic.invalid|2"),
   ).rejects.toMatchObject({ code: "OFFLINE_ACCOUNT_MISMATCH" });
+});
+
+it("rejects an old account acknowledgement after another account reuses the visit ID", async () => {
+  const start = "2026-11-12T10:00:00";
+  await storage.setUncommittedVisitStatus(7, "UNDONE", start, account);
+  const snapshot = (await storage.getUncommittedVisitStatus())[7];
+  expect(
+    await storage.committedVisitStatus("7", snapshot, undefined, account),
+  ).toBe(true);
+  const nextAccount = "https://synthetic.invalid|2";
+  await storage.activateOfflineAccount(nextAccount);
+  await storage.setUncommittedVisitStatus(7, "UNDONE", start, nextAccount);
+  const replacement = (await storage.getUncommittedVisitStatus())[7];
+  expect(
+    await storage.committedVisitStatus("7", snapshot, undefined, account),
+  ).toBe(false);
+  expect((await storage.getUncommittedVisitStatus())[7]).toEqual(replacement);
+});
+
+it("rejects duplicate acknowledgement after the same account recreates identical visit work", async () => {
+  const start = "2026-11-12T10:00:00";
+  await storage.setUncommittedVisitStatus(7, "UNDONE", start, account);
+  const snapshot = (await storage.getUncommittedVisitStatus())[7];
+  await storage.committedVisitStatus("7", snapshot, undefined, account);
+  await storage.setUncommittedVisitStatus(7, "UNDONE", start, account);
+  const replacement = (await storage.getUncommittedVisitStatus())[7];
+  expect(replacement._offlineRevision).not.toBe(snapshot._offlineRevision);
+  expect(
+    await storage.committedVisitStatus("7", snapshot, undefined, account),
+  ).toBe(false);
+  expect((await storage.getUncommittedVisitStatus())[7]).toEqual(replacement);
+});
+
+it("requires an authenticated account even when a storage owner exists", async () => {
+  await expect(storage.requireOfflineAccount(null)).rejects.toMatchObject({
+    code: "OFFLINE_ACCOUNT_MISMATCH",
+  });
+  await expect(storage.requireOfflineAccount(undefined)).rejects.toMatchObject({
+    code: "OFFLINE_ACCOUNT_MISMATCH",
+  });
 });

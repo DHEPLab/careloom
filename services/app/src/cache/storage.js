@@ -94,7 +94,7 @@ function ownershipError(code = "OFFLINE_ACCOUNT_MISMATCH") {
 
 async function requireOfflineAccount(account) {
   const owner = await getValue("OFFLINE_ACCOUNT");
-  if (!owner || (account && owner !== account)) throw ownershipError();
+  if (!account || !owner || owner !== account) throw ownershipError();
   return owner;
 }
 
@@ -222,12 +222,23 @@ export default {
       if (!account) throw ownershipError();
       await requireOfflineAccount(account);
       const obj = (await getUncommittedVisitStatus()) || {};
-      obj[id] = { status, startTime: startTime || obj[id]?.startTime };
+      obj[id] = {
+        status,
+        startTime: startTime || obj[id]?.startTime,
+        _offlineRevision: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      };
       await addObject("UNCOMMITTED_VISIT_STATUS", obj);
     });
   },
-  committedVisitStatus: (id, acknowledgedStatus, acknowledgedAnswers) =>
+  committedVisitStatus: (
+    id,
+    acknowledgedStatus,
+    acknowledgedAnswers,
+    account,
+  ) =>
     changeQueue(async () => {
+      if (!account || (await getValue("OFFLINE_ACCOUNT")) !== account)
+        return false;
       const statuses = (await getUncommittedVisitStatus()) || {};
       if (
         !id ||

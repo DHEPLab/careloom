@@ -173,36 +173,38 @@ export default {
       { url, token: requestToken },
     );
   },
-  put(url, body) {
+  put(url, body, options = {}) {
+    const requestToken = options.token ?? Token;
     return request(
       fetch(`${Host}${url}`, {
         method: "PUT",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          Authorization: `Bearer ${Token}`,
+          Authorization: `Bearer ${requestToken}`,
         },
         body: JSON.stringify(body),
         timeout,
       }),
       "PUT",
-      { url, token: Token },
+      { url, token: requestToken },
     );
   },
-  silencePut(url, body) {
+  silencePut(url, body, options = {}) {
+    const requestToken = options.token ?? Token;
     return request(
       fetch(`${Host}${url}`, {
         method: "PUT",
         headers: {
           Accept: "application/json",
           "Content-Type": "application/json",
-          Authorization: `Bearer ${Token}`,
+          Authorization: `Bearer ${requestToken}`,
         },
         body: JSON.stringify(body),
         timeout,
       }),
       "PUT",
-      { silence: true, url, token: Token },
+      { silence: true, url, token: requestToken },
     );
   },
   get(url, params) {
