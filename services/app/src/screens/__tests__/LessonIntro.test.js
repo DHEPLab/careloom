@@ -1,5 +1,5 @@
 import React from "react";
-import { render, fireEvent, waitFor, act } from "@testing-library/react-native";
+import TestRenderer, { act } from "react-test-renderer";
 import LessonIntro from "../LessonIntro";
 import storage from "../../cache/storage";
 import Http from "../../utils/http";
@@ -20,12 +20,25 @@ jest.mock("../../components", () => ({
   GhostNavigatorHeader: () => null,
   BottomRightBackground: () => null,
   Button: ({ onPress }) =>
-    require("react").createElement(require("react-native").Pressable, {
+    require("react").createElement("Button", {
       testID: "next",
       onPress,
     }),
 }));
 const account = "https://synthetic.invalid|1";
+let screen;
+async function renderIntro(props) {
+  await act(async () => {
+    screen = TestRenderer.create(<LessonIntro {...props} />);
+  });
+}
+function pressNext() {
+  return screen.root.findByProps({ testID: "next" }).props.onPress();
+}
+afterEach(() => {
+  act(() => screen?.unmount());
+  screen = undefined;
+});
 beforeEach(() => {
   jest.clearAllMocks();
   Http.session.mockResolvedValue({ account, token: "synthetic-token" });
@@ -49,18 +62,20 @@ it("waits for visit-specific resume initialization before opening the modules", 
   const route = {
     params: { id: 1, visitId: 7, continue: true, nextModuleIndex: 3 },
   };
-  const screen = render(<LessonIntro navigation={navigation} route={route} />);
-  await waitFor(() => expect(release).toBeDefined());
-  fireEvent.press(screen.getByTestId("next"));
+  await renderIntro({ navigation, route });
+  expect(release).toBeDefined();
+  let pressing;
+  act(() => {
+    pressing = pressNext();
+  });
   expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
   await act(async () => {
     release();
+    await pressing;
   });
-  await waitFor(() =>
-    expect(navigation.navigate).toHaveBeenCalledWith(
-      "LessonModules",
-      route.params,
-    ),
+  expect(navigation.navigate).toHaveBeenCalledWith(
+    "LessonModules",
+    route.params,
   );
   expect(storage.setNextModule).toHaveBeenCalledWith(3, 7, account);
 });
@@ -69,26 +84,19 @@ it("keeps the user on the intro if visit initialization fails", async () => {
     new Error("synthetic save failure"),
   );
   const navigation = { navigate: jest.fn(), goBack: jest.fn() };
-  const screen = render(
-    <LessonIntro
-      navigation={navigation}
-      route={{ params: { id: 1, visitId: 7 } }}
-    />,
-  );
+  await renderIntro({ navigation, route: { params: { id: 1, visitId: 7 } } });
   await act(async () => {
-    fireEvent.press(screen.getByTestId("next"));
+    await pressNext();
   });
   expect(navigation.navigate).not.toHaveBeenCalled();
   expect(Location.requestForegroundPermissionsAsync).not.toHaveBeenCalled();
 });
 
-it("does not write visit status or progress while previewing curriculum", () => {
-  render(
-    <LessonIntro
-      navigation={{ navigate: jest.fn(), goBack: jest.fn() }}
-      route={{ params: { id: 1, preview: true } }}
-    />,
-  );
+it("does not write visit status or progress while previewing curriculum", async () => {
+  await renderIntro({
+    navigation: { navigate: jest.fn(), goBack: jest.fn() },
+    route: { params: { id: 1, preview: true } },
+  });
   expect(storage.setUncommittedVisitStatus).not.toHaveBeenCalled();
   expect(storage.setNextModule).not.toHaveBeenCalled();
 });
