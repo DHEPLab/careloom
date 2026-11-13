@@ -43,16 +43,20 @@ jest.mock("../store", () => {
     ),
   };
 });
-jest.mock("../navigation/Navigator", () => () => {
-  const token = require("react-redux").useSelector(
-    (state) => state.user.userToken,
-  );
-  return require("react").createElement(
-    require("react-native").Text,
-    { testID: "route" },
-    token ? "authenticated" : "signed-out",
-  );
+jest.mock("../navigation/Navigator", () => {
+  const React = require("react");
+  const { Text } = require("react-native");
+  const { useSelector } = require("react-redux");
+  return function TestNavigator() {
+    const token = useSelector((state) => state.user.userToken);
+    return React.createElement(
+      Text,
+      { testID: "route" },
+      token ? "authenticated" : "signed-out",
+    );
+  };
 });
+
 jest.mock("../utils/http", () => ({
   session: jest.fn(),
   get: jest.fn(),

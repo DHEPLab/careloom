@@ -232,7 +232,7 @@ it("clears only the acknowledged visit progress even when unrelated work is queu
   await storage.setNextModule(1, 8, account);
   const snapshot = (await storage.getUncommittedVisitStatus())[7];
   expect(
-    await storage.committedVisitStatus("7", snapshot, undefined, account),
+    await storage.committedVisitStatus("7", snapshot, undefined, account, 3),
   ).toBe(true);
   expect(Number(await storage.getNextModule(7))).toBe(0);
   expect(Number(await storage.getNextModule(8))).toBe(1);
@@ -258,4 +258,50 @@ it("holds unassigned legacy progress instead of applying it to another visit", a
   await AsyncStorage.setItem("NEXT_MODULE", "3");
   expect(Number(await storage.getNextModule(8))).toBe(0);
   expect(await AsyncStorage.getItem("NEXT_MODULE")).toBe("3");
+});
+
+it("retains progress when a status snapshot is read between revision and cursor persistence", async () => {
+  await storage.setUncommittedVisitStatus(
+    7,
+    "UNDONE",
+    "2026-11-13T10:00:00",
+    account,
+  );
+  await storage.setNextModule(1, 7, account);
+  const before = (await storage.getUncommittedVisitStatus())[7];
+  const originalSet = AsyncStorage.setItem.getMockImplementation();
+  let release;
+  AsyncStorage.setItem.mockImplementation((key, value) => {
+    if (key === "NEXT_MODULE_7" && value === "2") {
+      return new Promise((resolve, reject) => {
+        release = () =>
+          Promise.resolve(originalSet(key, value)).then(resolve, reject);
+      });
+    }
+    return originalSet(key, value);
+  });
+  try {
+    const updating = storage.setNextModule(2, 7, account);
+    for (let attempt = 0; !release && attempt < 20; attempt++)
+      await new Promise((resolve) => setImmediate(resolve));
+    expect(release).toBeDefined();
+    const snapshot = (await storage.getUncommittedVisitStatus())[7];
+    expect(snapshot._offlineRevision).not.toBe(before._offlineRevision);
+    const sentCursor = await storage.getNextModule(7);
+    expect(Number(sentCursor)).toBe(1);
+    const acknowledgement = storage.committedVisitStatus(
+      "7",
+      snapshot,
+      undefined,
+      account,
+      sentCursor,
+    );
+    release();
+    await updating;
+    expect(await acknowledgement).toBe(false);
+    expect(Number(await storage.getNextModule(7))).toBe(2);
+    expect((await storage.getUncommittedVisitStatus())[7]).toEqual(snapshot);
+  } finally {
+    AsyncStorage.setItem.mockImplementation(originalSet);
+  }
 });

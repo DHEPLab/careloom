@@ -253,6 +253,7 @@ export default {
     acknowledgedStatus,
     acknowledgedAnswers,
     account,
+    acknowledgedModuleIndex = 0,
   ) =>
     changeQueue(async () => {
       if (!account || (await getValue("OFFLINE_ACCOUNT")) !== account)
@@ -268,6 +269,8 @@ export default {
         JSON.stringify(answers ?? null) !==
         JSON.stringify(acknowledgedAnswers ?? null)
       )
+        return false;
+      if (Number(await getNextModule(id)) !== Number(acknowledgedModuleIndex))
         return false;
       await addObject(`ANSWER_LESSON_${id}`, {});
       await AsyncStorage.removeItem(`NEXT_MODULE_${id}`);

@@ -110,6 +110,7 @@ const Home: React.FC<Props> = ({ navigation }) => {
             uncommitted[id],
             answersData,
             session.account,
+            nextModuleIndex,
           );
           if (acknowledged) {
             await Storage.setNextVisit({});

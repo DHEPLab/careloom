@@ -116,6 +116,7 @@ export default function LessonModules({ navigation, route }) {
           uncommitted[params?.visitId],
           answersData,
           session.account,
+          nextModule,
         );
       } else {
         // from Home screen, offline mode, save visit status to storage
