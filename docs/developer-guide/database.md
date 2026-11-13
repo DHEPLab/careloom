@@ -139,21 +139,26 @@ The initial schema migration is `V1__healthy.sql`. Subsequent migrations use tim
 3. **Use descriptive names** (e.g., `V20260327120000__add_example_table.sql`).
 4. **Test on a fresh database** before submitting.
 
-### Checking Migration Status
+### Checking migration status
+
+Type: how-to.
+
+In the repository root, connect to the confirmed local evaluation database through its Compose service. With the default example account/database:
 
 ```bash
-# Connect to the database
-docker exec -it careloom-db mysql -u careloom -pcareloom careloom
+docker compose -p careloom-local-evaluation -f docker-compose.full.yml exec db mysql -u careloom -p careloom
+```
 
-# View applied migrations
+Enter the evaluation account password at the prompt, then inspect:
+
+```sql
 SELECT * FROM flyway_schema_history ORDER BY installed_rank;
 ```
 
-### Resetting for Development
+Recovery: If the account/database or project differs, confirm the configured values before retrying. Do not put passwords in shell history, attach to a guessed global container name, or alter migration history to bypass a failure.
 
-If you need a clean database during development:
+### Resetting a synthetic development database
 
-```bash
-docker compose down -v    # Removes the data volume
-docker compose up -d      # Fresh database, migrations re-run on API start
-```
+Type: reference.
+
+Stopping the project preserves its database volume. Deleting a volume destroys that database. Follow the explicit, project-scoped [testing cleanup](testing.md#cleanup) only after confirming all data is disposable synthetic data. Never use a reset to rotate an operational password, upgrade a deployment or repair a failed migration in shared data.

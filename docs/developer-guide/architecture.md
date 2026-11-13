@@ -9,7 +9,7 @@ CareLoom is a three-service mono-repo. This page describes how the services comm
 | Admin Dashboard  |   REST   |   API Service    |
 | (React/Vite)     +--------->| (Spring Boot)    |
 | Port 3000 (prod) |   JSON   | Port 8080        |
-| Port 5173 (dev)  |          +--------+---------+
+| Port 3000 (dev)  |          +--------+---------+
 +------------------+                   |
                                   JDBC / JPA
 +------------------+                   |

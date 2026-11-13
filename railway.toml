@@ -21,6 +21,10 @@
 #   SPRING_DATASOURCE_USERNAME = ${{MySQL.MYSQLUSER}}
 #   SPRING_DATASOURCE_PASSWORD = ${{MySQL.MYSQLPASSWORD}}
 #   JWT_SECRET_KEY = <generate-a-strong-secret>
+#   GOOGLE_MAP_API_KEY = not-configured
+#   AWS_REGION = us-east-1
+#   AWS_EC2_METADATA_DISABLED = true
+# Cloud configuration remains unverified; test local Compose first.
 #
 # === Service 2: careloom-admin ===
 # Root Directory:   services/admin-web

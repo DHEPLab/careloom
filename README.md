@@ -4,13 +4,18 @@ Open-source platform for community health worker (CHW) home visiting programs. S
 
 **Formerly VisitLink** -- developed in collaboration with Stanford University, University of Nevada Reno, and University of North Carolina at Chapel Hill.
 
-## Quick Deploy
+## Start here
 
-| Platform | Cost | Time | Guide |
-|----------|------|------|-------|
-| Docker Compose | Free (self-hosted) | 15 min | [Self-hosted guide](docs/getting-started/self-hosted-deploy.md) |
-| Railway | ~$5-8/mo | 5 min | [One-click deploy](docs/getting-started/one-click-deploy.md) |
-| Render | ~$14-21/mo | 10 min | [Render Blueprint](docs/getting-started/one-click-deploy.md#render) |
+CareLoom source is available under Apache 2.0. A source checkout is not a prebuilt Android installer or a hosted service. Component version strings do not define a published platform release; use the exact commit when reporting a problem or reproducing a build.
+
+| Goal | Guide |
+|------|-------|
+| Run a local instance with synthetic data | [Self-hosted setup](docs/getting-started/self-hosted-deploy.md) |
+| Develop or test a component | [Local development](docs/developer-guide/local-setup.md) and [testing](docs/developer-guide/testing.md) |
+| Evaluate a cloud deployment | [Cloud deployment notes](docs/getting-started/one-click-deploy.md), not yet validated as a one-click installation |
+| Read the Healthy Future curriculum | [Healthy Future resources](https://dhep.org/healthy-future/#curriculum) |
+
+The curriculum PDF is a separate resource with its own attribution and license. To deliver content in CareLoom, configure structured modules through the [curriculum editor](docs/implementer-guide/curriculum-management.md); downloading the PDF does not populate the app.
 
 ## What's Inside
 
@@ -34,37 +39,24 @@ Open-source platform for community health worker (CHW) home visiting programs. S
 - **Mobile App:** Expo / React Native / Redux
 - **Infrastructure:** Docker / nginx / AWS (production)
 
-## Local Development
+## Local development
 
-```bash
-git clone https://github.com/DHEPLab/careloom.git
-cd careloom
-docker compose up -d                    # Start MySQL on :3306
-cd services/api && ./gradlew bootRun    # API on :8080
-cd services/admin-web && yarn dev       # Admin dashboard on :3000
-cd services/app && npx expo start       # Mobile app
-```
+Follow [Local Setup](docs/developer-guide/local-setup.md) rather than starting services against an existing deployment. Use an isolated database, your own API endpoint and synthetic records. The Android app is built separately from the API and dashboard.
 
-Default credentials after first boot:
-
-| Role | Username | Password |
-|------|----------|----------|
-| Super Admin | `admin` | `admin` |
-
-See [Developer Guide](docs/developer-guide/) for detailed setup instructions.
+Offline use requires an initial online sign-in and prepared content. See [mobile offline behavior](docs/developer-guide/mobile-app.md#offline-support) before relying on cached records or switching accounts.
 
 ## Roadmap
 
-### Current (v1.x)
+### Current capabilities
 - [x] Stage-based curriculum delivery
 - [x] Visit scheduling and tracking
-- [x] Offline-first mobile app
+- [x] Mobile caching and queued uploads; see the offline behavior and test guidance
 - [x] Multi-language support (EN, ZH)
 - [x] Admin dashboard for program managers
 - [x] Questionnaire system with branching logic
 - [x] Visit reporting and export
 
-### Planned (v2.x)
+### Planned work
 - [ ] Spring Boot 3.x / Java 17 upgrade
 - [ ] AI-enhanced content recommendations
 - [ ] French language support
@@ -82,9 +74,7 @@ Apache License 2.0. See [LICENSE](LICENSE).
 
 ## Citation
 
-If you use CareLoom in research, please cite:
-
-> [Citation TBD -- will be added when the platform paper is published]
+A platform-paper citation has not been established in this repository. For reproducibility, record the CareLoom repository URL and exact commit you used. Studies linked from the [Healthy Future page](https://dhep.org/healthy-future/#studies) evaluate their described interventions; they do not validate every software feature.
 
 ## Related Projects
 

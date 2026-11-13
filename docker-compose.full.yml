@@ -1,67 +1,61 @@
-# CareLoom Full Stack (DB + API + Admin Web)
-# Usage: docker compose -f docker-compose.full.yml up --build
-# Copy .env.example to .env and edit before running.
-#
-# Note: The mobile app (services/app) is NOT containerized.
-# Run it separately with: cd services/app && npx expo start
-
+# Local, synthetic-data evaluation only. Copy .env.example to .env first.
+# The mobile app is built separately; see docs/developer-guide/mobile-app.md.
 services:
   db:
     image: mysql:5.7
-    container_name: careloom-db
-    restart: always
+    platform: linux/amd64
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-careloom}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-careloom}
       MYSQL_USER: ${MYSQL_USER:-careloom}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-careloom}
-    ports:
-      - "3306:3306"
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
     volumes:
       - careloom_dbdata:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-careloom}"]
-      interval: 10s
+      test: ["CMD-SHELL", "mysql --protocol=TCP -h 127.0.0.1 -u\"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\" \"$$MYSQL_DATABASE\" -e 'SELECT 1' >/dev/null"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
 
   api:
     build:
       context: services/api
-      dockerfile: Dockerfile
-    container_name: careloom-api
-    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      CARELOOM_BOOTSTRAP_ADMIN_ENABLED: ${CARELOOM_BOOTSTRAP_ADMIN_ENABLED:-false}
+      CARELOOM_BOOTSTRAP_ADMIN_USERNAME: ${CARELOOM_BOOTSTRAP_ADMIN_USERNAME:-evaluation_admin}
+      CARELOOM_BOOTSTRAP_ADMIN_PASSWORD: ${CARELOOM_BOOTSTRAP_ADMIN_PASSWORD:-not-configured}
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-careloom}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf-8
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-careloom}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in .env}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_EC2_METADATA_DISABLED: "true"
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-careloom-media-not-configured}
+      # Compose 5.3.1 can stall creating a service with an empty env value.
+      GOOGLE_MAP_API_KEY: ${GOOGLE_MAP_API_KEY:-not-configured}
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-careloom}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf-8
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-careloom}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-careloom}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-do-not-use-in-prod}
     ports:
-      - "8080:8080"
+      - "127.0.0.1:${API_PORT:-8080}:8080"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
-      interval: 15s
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/actuator/health"]
+      interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 40
       start_period: 30s
 
   admin-web:
     build:
       context: services/admin-web
-      dockerfile: Dockerfile
-    container_name: careloom-admin
-    restart: always
     depends_on:
       api:
         condition: service_healthy
     environment:
       API_URL: http://api:8080
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${ADMIN_PORT:-3000}:3000"
 
 volumes:
   careloom_dbdata:

@@ -1,5 +1,5 @@
 import React from "react";
-import { render } from "@testing-library/react-native";
+import { render, waitFor } from "@testing-library/react-native";
 import storage from "../../cache/storage";
 
 import LessonModules from "../LessonModules";
@@ -24,6 +24,12 @@ jest.mock("../../cache/storage", () => ({
 jest.mock("../../utils/http", () => ({
   ...jest.requireActual("../../utils/http"),
   get: jest.fn(() => Promise.resolve({ baby: { id: 1 } })),
+  session: jest.fn(() =>
+    Promise.resolve({
+      account: "https://synthetic.invalid|1",
+      token: "synthetic-token",
+    }),
+  ),
 }));
 
 const createTestProps = () => ({
@@ -35,7 +41,7 @@ const createTestProps = () => ({
   route: {
     params: {
       id: 1,
-      // visitId: 1
+      visitId: 7,
     },
   },
 });
@@ -73,8 +79,12 @@ it("should finish current module", async () => {
   props.route.params.originModuleId = 11;
   props.route.params.finished = true;
   rerender(<LessonModules {...props} />);
-  expect(reloadNextModule).toBeCalled();
-  expect(storage.setNextModule).toBeCalledWith(2);
+  await waitFor(() => expect(reloadNextModule).toBeCalled());
+  expect(storage.setNextModule).toBeCalledWith(
+    2,
+    7,
+    "https://synthetic.invalid|1",
+  );
 });
 
 // ignore console.warn

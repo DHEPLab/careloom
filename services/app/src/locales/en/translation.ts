@@ -44,6 +44,10 @@ export default {
     submit: "Submit",
   },
   SignIn: {
+    offlineOwnerUnknown:
+      "Saved records from an earlier app version have no recorded owner. Ask your program administrator to recover them before continuing. Do not clear app storage.",
+    offlineAccountRecovery:
+      "This device has pending offline records. Sign in with the original account to sync them. If the original account is unknown, ask your program administrator to recover the records. Do not clear app storage.",
     loginSuccess: "Log in Successfully",
     enterUsername: "Please enter username",
     enterPassword: "Please enter password",
@@ -52,6 +56,8 @@ export default {
     login: "Log In",
   },
   App: {
+    offlineSyncPending:
+      "Offline work is still saved on this device. Reconnect and refresh to retry. Do not clear app storage.",
     submitFailed: "Submission Failed",
     networkError: "Internet error, please try again later.",
     understood: "OK",

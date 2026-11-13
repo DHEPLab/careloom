@@ -65,10 +65,8 @@ export default function CreateVisit({ navigation, route }) {
       status: "NOT_SUBMIT",
       lessonName: lesson.name,
     };
-    const oldVisits = await storage.getOfflineVisits();
-    storage
-      .setOfflineVisits([...(oldVisits || []), visit])
-      .then(navigation.goBack);
+    const session = await http.session();
+    storage.addOfflineVisit(visit, session.account).then(navigation.goBack);
   }
 
   async function renderDateRange() {

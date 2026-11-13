@@ -6,15 +6,14 @@
 services:
   db:
     image: mysql:5.7
-    container_name: careloom-db
-    restart: always
+    platform: linux/amd64
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-careloom}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-careloom}
       MYSQL_USER: ${MYSQL_USER:-careloom}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-careloom}
     ports:
-      - "3306:3306"
+      - "127.0.0.1:${DB_PORT:-3306}:3306"
     volumes:
       - careloom_dbdata:/var/lib/mysql
     healthcheck:

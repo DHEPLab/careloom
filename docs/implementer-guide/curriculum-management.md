@@ -2,6 +2,10 @@
 
 Curricula define the content that community health workers deliver during home visits. This guide explains how to create and manage curricula through the admin dashboard.
 
+## Curriculum PDF and app modules
+
+The [Healthy Future curriculum PDF](https://dhep.org/healthy-future/#curriculum) is a reading resource. Its license and attribution are separate from the software license. The app uses structured modules and components; this guide does not provide an automatic PDF import. Start with one reviewed synthetic module and test its published lesson before configuring a full curriculum.
+
 ## Key Concepts
 
 ### Stages

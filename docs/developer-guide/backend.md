@@ -2,18 +2,9 @@
 
 The API service is a Spring Boot 2.2.6 application targeting Java 8. It serves REST endpoints consumed by both the admin dashboard and the mobile app.
 
-## Running Locally
+## Running locally
 
-```bash
-cd services/api
-
-DATABASE_URL="jdbc:mysql://localhost:3306/careloom?useSSL=false&allowPublicKeyRetrieval=true" \
-JWT_SECRET_KEY="dev-secret-change-me" \
-GOOGLE_MAP_API_KEY="optional" \
-./gradlew bootRun --args='--spring.profiles.active=dev,local'
-```
-
-The API starts on port 8080 by default.
+Use the [native API instructions](local-setup.md#native-database-and-api) with JDK 11, or the [full Docker setup](../getting-started/self-hosted-deploy.md), which builds the JAR and tests inside its image. Use a new synthetic database and the docker profile's explicit datasource variables. The default API port is 8080.
 
 ## Spring Profiles
 

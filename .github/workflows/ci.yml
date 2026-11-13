@@ -64,3 +64,23 @@ jobs:
           cache-dependency-path: services/app/yarn.lock
       - run: yarn install --frozen-lockfile
       - run: yarn test:ci
+
+  local-install:
+    name: Disposable local installation
+    env:
+      CARELOOM_BOOTSTRAP_ADMIN_ENABLED: "true"
+      CARELOOM_BOOTSTRAP_ADMIN_USERNAME: evaluation_admin
+      CARELOOM_BOOTSTRAP_ADMIN_PASSWORD: synthetic-ci-only-administrator
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start an isolated synthetic instance
+        run: docker compose --env-file .env.example -p careloom-ci -f docker-compose.full.yml up --build -d --wait --wait-timeout 240
+      - name: Check health, login, proxy routing and synthetic records
+        run: python3 scripts/deployment-smoke.py --allow-synthetic-writes
+      - name: Remove only the disposable CI instance and its test volume
+        if: always()
+        run: docker compose --env-file .env.example -p careloom-ci -f docker-compose.full.yml down --volumes --remove-orphans

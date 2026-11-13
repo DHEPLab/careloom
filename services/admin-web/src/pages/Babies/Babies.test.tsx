@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { setupServer } from "msw/node";
@@ -154,12 +154,20 @@ describe("Babies Page", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
-    expect(dispatchRequest).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        request: expect.objectContaining({
-          url: expect.stringMatching(/admin\/babies\/approved\?page=0&size=10$/),
+    // Address autocomplete may finish after the list refresh. Verify the
+    // refresh after submission without ordering unrelated requests.
+    const postRequestIndex = dispatchRequest.mock.calls.findIndex(
+      ([event]) => event.request.method === "POST" && /admin\/babies$/.test(event.request.url),
+    );
+    await waitFor(() =>
+      expect(dispatchRequest.mock.calls.slice(postRequestIndex + 1)).toContainEqual([
+        expect.objectContaining({
+          request: expect.objectContaining({
+            method: "GET",
+            url: expect.stringMatching(/admin\/babies\/approved\?page=0&size=10$/),
+          }),
         }),
-      }),
+      ]),
     );
   });
 

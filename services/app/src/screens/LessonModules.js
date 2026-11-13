@@ -27,7 +27,7 @@ export default function LessonModules({ navigation, route }) {
   const { params } = route;
   const [lesson] = Storage.useLesson(params?.id);
   const [babyId, setBabyId] = useState();
-  const [nextModule, reloadNextModule] = Storage.useNextModule();
+  const [nextModule, reloadNextModule] = Storage.useNextModule(params?.visitId);
   const canFinish = nextModule > lesson.modules?.length - 1;
   const [questionnaire, setQuestionnaire] = useState();
   const { isConnected } = useSelector((state) => state.net);
@@ -36,8 +36,16 @@ export default function LessonModules({ navigation, route }) {
 
   useEffect(() => {
     if (!params.preview && params.originModuleId && params.finished) {
-      Storage.setNextModule(nextModule + 1);
-      reloadNextModule();
+      Http.session()
+        .then((session) =>
+          Storage.setNextModule(
+            nextModule + 1,
+            params.visitId,
+            session.account,
+          ),
+        )
+        .then(reloadNextModule)
+        .catch(openErrorMessage);
     }
   }, [route.params?.originModuleId]);
 
@@ -54,9 +62,9 @@ export default function LessonModules({ navigation, route }) {
     queryQuestionnaire();
   }, [lesson]);
 
-  function onUploadVisitLocation() {
+  function onUploadVisitLocation(session) {
     if (!params.preview && babyId) {
-      uploadVisitLocation(babyId, params.visitId);
+      uploadVisitLocation(babyId, params.visitId, session);
     }
   }
 
@@ -65,31 +73,59 @@ export default function LessonModules({ navigation, route }) {
   }
 
   async function finish() {
+    const session = await Http.session();
     const answersData = await Storage.getAnswers(params?.visitId);
     if (!answersData && questionnaire) {
       openErrorMessage();
       return;
     }
-    onUploadVisitLocation();
     const answers = answersData?.answers;
     if (!params.preview) {
+      const current = await Http.session();
+      if (
+        current.account !== session.account ||
+        current.token !== session.token
+      )
+        return;
+      if (!session.account || !session.token) return;
+      onUploadVisitLocation(session);
       if (isConnected) {
+        await Storage.requireOfflineAccount(session.account);
         const uncommitted = await Storage.getUncommittedVisitStatus();
+        const current = await Http.session();
+        if (
+          current.account !== session.account ||
+          current.token !== session.token
+        )
+          return;
         // from Visit screen, online mode, direct submit
-        await Http.put(`/api/visits/${params?.visitId}/status`, {
-          visitStatus: "DONE",
-          startTime: moment(uncommitted[params?.visitId].startTime).format(
-            "YYYY-MM-DDTHH:mm:ssZ",
-          ),
-          nextModuleIndex: nextModule,
-          questionnaireRecords: answers,
-        });
-        Storage.setAnswers(params?.visitId, []);
-        Storage.committedVisitStatus();
-        Storage.setNextModule(0);
+        await Http.put(
+          `/api/visits/${params?.visitId}/status`,
+          {
+            visitStatus: "DONE",
+            startTime: moment(uncommitted[params?.visitId].startTime).format(
+              "YYYY-MM-DDTHH:mm:ssZ",
+            ),
+            nextModuleIndex: nextModule,
+            questionnaireRecords: answers,
+          },
+          { token: session.token },
+        );
+        await Storage.committedVisitStatus(
+          params?.visitId,
+          uncommitted[params?.visitId],
+          answersData,
+          session.account,
+          nextModule,
+        );
       } else {
         // from Home screen, offline mode, save visit status to storage
-        await Storage.setUncommittedVisitStatus(params?.visitId, "DONE");
+        await Storage.setUncommittedVisitStatus(
+          params?.visitId,
+          "DONE",
+          undefined,
+          session.account,
+        );
       }
     }
 

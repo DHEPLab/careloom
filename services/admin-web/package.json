@@ -23,7 +23,7 @@
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "antd": "^5.20.6",
-    "axios": "^1.7.5",
+    "axios": "^1.16.0",
     "dayjs": "^1.11.13",
     "file-saver": "^2.0.5",
     "formik": "^2.4.6",

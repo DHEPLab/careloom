@@ -1,161 +1,49 @@
-# One-Click Cloud Deploy
+# Cloud deployment notes
 
-Deploy CareLoom to a managed cloud platform without managing servers. This guide covers Railway (recommended) and Render.
+Type: explanation.
 
-## What You Get
+The repository includes [Render](../../render.yaml) and [Railway](../../railway.toml) configuration starting points. These paths have not been acceptance-tested in this release preparation. They require separate database, network and secret configuration; they are not a verified one-click installation. Provider prices and provisioning times are not promised here.
 
-A running CareLoom instance with:
-- **API service** (Spring Boot) connected to a managed MySQL database
-- **Admin dashboard** (React) accessible via browser
-- **Default admin account** for initial setup
+First verify the [local Docker setup](self-hosted-deploy.md) with synthetic data. A successful local test does not establish cloud readiness.
 
-The mobile app is not deployed to the cloud. CHWs install it on their Android devices and point it at the API URL.
+## Service configuration
 
----
+Type: reference.
 
-## Railway (Recommended)
+| Service | Build context | Required configuration |
+|---------|---------------|------------------------|
+| API | `services/api` | Dockerfile builds and tests the JAR; `SPRING_PROFILES_ACTIVE=docker`, database connection, JWT signing key and AWS region |
+| Admin dashboard | `services/admin-web` | Dockerfile builds static assets; runtime `API_URL` is the full API origin reachable from nginx, including scheme and port |
+| Database | Your separately provisioned MySQL instance | Account, database, networking and TLS settings appropriate to your host |
+| Mobile app | `services/app` | Separate Android build targeting your deployment's public API endpoint |
 
-**Estimated cost:** ~$5-8/month (Hobby plan, varies with usage)
-**Time:** ~5 minutes
+The dashboard browser sends `/admin/` and `/api/` requests to its own origin. Container nginx forwards them to `API_URL`. An internal API hostname belongs in nginx configuration, not in the Android build. A public API address for devices must be reachable from those devices.
 
-Railway provides managed MySQL and easy multi-service deploys from a mono-repo.
+The status-only API health path is `/actuator/health`. Media uploads and maps require your own service configuration. The local placeholder bucket is not a media service.
 
-### Step 1: Create a Railway Project
+## Railway
 
-1. Go to [railway.app](https://railway.app) and sign in with GitHub
-2. Click **New Project** > **Deploy from GitHub repo**
-3. Select the `DHEPLab/careloom` repository (fork it first if needed)
+Type: reference.
 
-### Step 2: Add MySQL
-
-1. In your project dashboard, click **New** > **Database** > **MySQL**
-2. Railway auto-provisions the database and sets `MYSQL_*` environment variables
-3. Note: the database is empty at this point. The API will run Flyway migrations on first boot.
-
-### Step 3: Create the API Service
-
-1. Click **New** > **GitHub Repo** > select the same repo
-2. In the service settings:
-   - **Root Directory:** `services/api`
-   - **Builder:** Dockerfile
-3. Add these environment variables (Settings > Variables):
-
-| Variable | Value |
-|----------|-------|
-| `SPRING_PROFILES_ACTIVE` | `docker` |
-| `SPRING_DATASOURCE_URL` | `jdbc:mysql://${{MySQL.MYSQLHOST}}:${{MySQL.MYSQLPORT}}/${{MySQL.MYSQLDATABASE}}?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf-8` |
-| `SPRING_DATASOURCE_USERNAME` | `${{MySQL.MYSQLUSER}}` |
-| `SPRING_DATASOURCE_PASSWORD` | `${{MySQL.MYSQLPASSWORD}}` |
-| `JWT_SECRET_KEY` | Generate a strong random string (e.g., `openssl rand -hex 32`) |
-
-4. Set the **Port** to `8080`
-5. Set the **Health Check Path** to `/actuator/health`
-6. Click **Deploy**
-
-### Step 4: Create the Admin Dashboard Service
-
-1. Click **New** > **GitHub Repo** > select the same repo again
-2. In the service settings:
-   - **Root Directory:** `services/admin-web`
-   - **Builder:** Dockerfile
-3. Add this environment variable:
-
-| Variable | Value |
-|----------|-------|
-| `API_URL` | `http://careloom-api.railway.internal:8080` |
-
-4. Set the **Port** to `3000`
-5. Click **Deploy**
-
-### Step 5: Generate Public URLs
-
-1. For each service, go to **Settings** > **Networking** > **Generate Domain**
-2. The admin dashboard URL is what you'll share with program managers
-3. The API URL is what you'll configure in the mobile app
-
----
+[`railway.toml`](../../railway.toml) describes a manually configured multi-service project. Set the API and dashboard build roots independently, provide your database variables to the API, and set a full internal API origin for the dashboard's `API_URL`. Recheck the provider's current database, networking, port and secret requirements before provisioning.
 
 ## Render
 
-**Estimated cost:** ~$14-21/month (two Starter instances + external MySQL)
-**Time:** ~10 minutes
+Type: reference.
 
-### Important: Render Does Not Offer Managed MySQL
+[`render.yaml`](../../render.yaml) describes the API and dashboard services. Supply your database connection and secrets explicitly. Set the dashboard's `API_URL` to a reachable API origin with a scheme and port; do not assume a host/port value alone is a URL. Recheck the provider's current database and private networking requirements before provisioning.
 
-You must provision MySQL separately. Options:
-- [PlanetScale](https://planetscale.com) (free tier available, MySQL-compatible)
-- [Aiven](https://aiven.io) (free tier, managed MySQL)
-- Any MySQL 5.7+ provider
+## Before operational use
 
-### Step 1: Provision External MySQL
+Type: how-to.
 
-1. Create a MySQL 5.7+ database on your chosen provider
-2. Note the connection details: host, port, database name, username, password
+1. In an isolated cloud test project, run health, login, profile and synthetic-record checks through the dashboard origin.
+   Recovery: If a check fails, keep the deployment private and inspect that service's logs. Do not enter real family data.
+2. In the same test project, verify persistence after a restart and the operator's backup/restore procedure.
+   Recovery: If records do not survive or a restore fails, stop the rollout and resolve storage configuration.
+3. In your Android build configuration, select your own public API endpoint and use the [EAS build instructions](../developer-guide/mobile-app.md#building-apks).
+   Recovery: If the endpoint or build identity is uncertain, do not distribute the build.
+4. In your operational review, complete [security and maintenance preparation](../implementer-guide/security.md).
+   Recovery: If ownership, access or maintenance procedures are missing, keep the system in synthetic evaluation.
 
-### Step 2: Deploy with Render Blueprint
-
-1. Go to [render.com](https://render.com) and sign in
-2. Click **New** > **Blueprint**
-3. Connect the `DHEPLab/careloom` repository
-4. Render reads `render.yaml` and creates two services automatically
-
-### Step 3: Set Database Variables
-
-For the **careloom-api** service, set these environment variables manually:
-
-| Variable | Value |
-|----------|-------|
-| `SPRING_DATASOURCE_URL` | `jdbc:mysql://YOUR_HOST:3306/YOUR_DB?useSSL=true&characterEncoding=utf-8` |
-| `SPRING_DATASOURCE_USERNAME` | Your MySQL username |
-| `SPRING_DATASOURCE_PASSWORD` | Your MySQL password |
-
-The `JWT_SECRET_KEY` is auto-generated by the Blueprint.
-
-### Step 4: Deploy
-
-1. Click **Apply** to deploy both services
-2. Wait for the API health check to pass (may take 1-2 minutes on first boot as Flyway runs migrations)
-
----
-
-## Post-Deployment Steps
-
-### 1. Change Default Passwords
-
-Log in to the admin dashboard with the default credentials (`admin` / `admin`) and immediately change the password.
-
-### 2. Load a Curriculum
-
-CareLoom ships with no curriculum data. Use the admin dashboard to:
-1. Create a new **Curriculum**
-2. Add **Modules** with content components (text, media, switches)
-3. Assign the curriculum to a **Project**
-
-### 3. Configure the Mobile App
-
-Point the mobile app at your API URL:
-1. In `services/app`, update the API endpoint configuration
-2. Build the APK with `npx expo build:android` or use EAS Build
-3. Distribute to CHWs
-
-### 4. Custom Domain (Optional)
-
-Both Railway and Render support custom domains:
-- **Railway:** Settings > Networking > Custom Domain
-- **Render:** Settings > Custom Domains
-
----
-
-## Troubleshooting
-
-### API fails health check on first deploy
-The first boot takes longer because Flyway runs all 62 database migrations. Wait 2-3 minutes and check logs. If it still fails, verify your database connection string.
-
-### "Access denied" database errors
-Double-check `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD`. On Railway, make sure you're using the `${{MySQL.MYSQLUSER}}` variable reference, not a hardcoded value.
-
-### Admin dashboard shows "Network Error"
-The `API_URL` environment variable must point to the API's internal URL (not the public URL). On Railway, use `http://careloom-api.railway.internal:8080`.
-
-### Mobile app can't connect to API
-The mobile app needs the API's **public** URL (the one with the Railway/Render domain). Make sure CORS is configured if you're using a custom domain.
+A downloadable curriculum PDF does not populate the app. Configure and review [structured modules](../implementer-guide/curriculum-management.md) before testing curriculum delivery.

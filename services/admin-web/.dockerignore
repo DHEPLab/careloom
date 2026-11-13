@@ -5,5 +5,3 @@ dist
 
 .idea
 ansible
-
-etc/nginx/conf.d/service.conf.template

@@ -35,8 +35,8 @@ export default function CreateBabyStep3({ navigation, route }) {
         approved: false,
         pastEdc: false,
       };
-      const oldBabies = await storage.getOfflineBabies();
-      await storage.setOfflineBabies([...(oldBabies || []), offlineBaby]);
+      const session = await http.session();
+      await storage.addOfflineBaby(offlineBaby, session.account);
       openMessage();
       setTimeout(() => {
         closeMessage();

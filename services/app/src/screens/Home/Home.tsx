@@ -78,24 +78,43 @@ const Home: React.FC<Props> = ({ navigation }) => {
 
   // submit home visit data starting with offline mode
   async function submit() {
+    const session = await Http.session();
+    if (!session.account || !session.token) return;
+    await Storage.requireOfflineAccount(session.account);
     const uncommitted = await Storage.getUncommittedVisitStatus();
-    const nextModuleIndex = await Storage.getNextModule();
     const id = Object.keys(uncommitted || {})[0];
     if (id) {
+      const nextModuleIndex = await Storage.getNextModule(id);
       const answersData = await Storage.getAnswers(id);
-      return Http.silencePut(`/api/visits/${id}/status`, {
-        visitStatus: uncommitted[id].status,
-        startTime: moment(uncommitted[id].startTime).format(
-          "YYYY-MM-DDTHH:mm:ssZ",
-        ),
-        nextModuleIndex,
-        questionnaireRecords: answersData?.answers,
-      })
-        .then(() => {
-          Storage.setNextVisit({});
-          Storage.committedVisitStatus();
-          Storage.setAnswers(id, {});
-          Storage.setNextModule(0);
+      const current = await Http.session();
+      if (
+        current.account !== session.account ||
+        current.token !== session.token
+      )
+        return;
+      return Http.silencePut(
+        `/api/visits/${id}/status`,
+        {
+          visitStatus: uncommitted[id].status,
+          startTime: moment(uncommitted[id].startTime).format(
+            "YYYY-MM-DDTHH:mm:ssZ",
+          ),
+          nextModuleIndex,
+          questionnaireRecords: answersData?.answers,
+        },
+        { token: session.token },
+      )
+        .then(async () => {
+          const acknowledged = await Storage.committedVisitStatus(
+            id,
+            uncommitted[id],
+            answersData,
+            session.account,
+            nextModuleIndex,
+          );
+          if (acknowledged) {
+            await Storage.setNextVisit({});
+          }
         })
         .catch(() => openSubmitErrorMessage());
     }

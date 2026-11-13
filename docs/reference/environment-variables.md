@@ -1,96 +1,70 @@
-# Environment Variables
+# Environment variables
 
-All environment variables used across CareLoom services, with descriptions, defaults, and which service uses them.
+Type: reference.
 
-## Database (Docker Compose)
+Use [`.env.example`](../../.env.example) for local evaluation. Keep real secrets outside Git. Compose reads `.env`; it does not export those values into your terminal for native commands.
 
-These variables are used in `docker-compose.yml` and `docker-compose.full.yml` to configure the MySQL container.
+## Database initialization
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MYSQL_ROOT_PASSWORD` | `careloom` | MySQL root password |
-| `MYSQL_DATABASE` | `careloom` | Database name created on first startup |
-| `MYSQL_USER` | `careloom` | Application database user |
-| `MYSQL_PASSWORD` | `careloom` | Application database user password |
+Type: reference.
 
-## API Service (`services/api`)
+| Variable | Meaning |
+|----------|---------|
+| `MYSQL_ROOT_PASSWORD` | Root password used to initialize a new MySQL data directory |
+| `MYSQL_DATABASE` | Initial database name, default `careloom` |
+| `MYSQL_USER` / `MYSQL_PASSWORD` | Application account initialized in a new database |
+| `DB_PORT` | Database-only Compose host port; bound to loopback; default 3306 |
 
-Set these when running the API, either as environment variables or in `application-local.yml`.
+The full Compose stack leaves MySQL internal and does not publish `DB_PORT`. These initialization variables do not rotate passwords in an existing database. See [existing-database maintenance](../implementer-guide/security.md#existing-database-credentials).
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DATABASE_URL` | (none, required) | JDBC connection URL. Example: `jdbc:mysql://localhost:3306/careloom?useSSL=false&allowPublicKeyRetrieval=true` |
-| `JWT_SECRET_KEY` | (none, required) | Secret key for signing JWT tokens. Generate with `openssl rand -hex 32` |
-| `GOOGLE_MAP_API_KEY` | (none, optional) | Google Maps API key for location features |
-| `SPRING_PROFILES_ACTIVE` | (none) | Comma-separated Spring profiles to activate (e.g., `dev,local` or `docker`) |
-| `SPRING_DATASOURCE_URL` | (none) | Alternative datasource URL used in Docker profile, overrides `DATABASE_URL` |
-| `SPRING_DATASOURCE_USERNAME` | (none) | Database username, used in Docker profile |
-| `SPRING_DATASOURCE_PASSWORD` | (none) | Database password, used in Docker profile |
+## API service
 
-### API Configuration (application.yml)
+Type: reference.
 
-These are configured in YAML files rather than environment variables but are important to know:
+| Variable | Meaning |
+|----------|---------|
+| `SPRING_PROFILES_ACTIVE=docker` | Reads the datasource and optional service settings below; also usable for native local development |
+| `SPRING_DATASOURCE_URL` | Full JDBC URL in the docker profile |
+| `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD` | Existing database credentials used by the API |
+| `JWT_SECRET_KEY` | Base64-encoded signing key; required by the current JJWT API; example is public and evaluation-only |
+| `AWS_REGION` | AWS client region; local Compose defaults to `us-east-1` |
+| `AWS_EC2_METADATA_DISABLED=true` | Prevents metadata credential discovery in local evaluation |
+| `AWS_S3_BUCKET` | Bucket owned/configured by the operator; local default is an unusable placeholder |
+| `GOOGLE_MAP_API_KEY` | Map service configuration; local Compose uses `not-configured` until you supply your own key. This placeholder does not enable maps. |
+| `API_PORT` | Full Compose API host port; loopback only; default 8080 |
+| `DATABASE_URL` | Legacy base-profile JDBC setting; use the explicit docker datasource variables for the documented local path |
 
-| Property | Default | Description |
-|----------|---------|-------------|
-| `server.port` | `8080` | HTTP port the API listens on |
-| `application.token-validity-day` | `30` | Number of days a JWT token remains valid |
-| `application.aws.bucket-name` | `visit-link-bucket-dev` | AWS S3 bucket name for media storage |
-| `application.cron.visit-expired` | `0 59 23 * * ?` | Cron expression for the visit expiration scheduled task |
+Media and map operations require additional operator-owned service configuration. Do not copy credentials or bucket names from another deployment. The local health check exposes status only at `/actuator/health`.
 
-## Admin Dashboard (`services/admin-web`)
+## First-install administrator
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `API_URL` | `http://api:8080` | URL of the API service. Used in the Docker container's Nginx proxy config. |
+Type: reference.
 
-In development, the API URL is configured in `vite.config.ts` (proxy settings).
+`CARELOOM_BOOTSTRAP_ADMIN_ENABLED` defaults to `false` and is available only in the Docker application profile. A new disposable instance can explicitly enable it with a chosen `CARELOOM_BOOTSTRAP_ADMIN_USERNAME` and a 12-64 character `CARELOOM_BOOTSTRAP_ADMIN_PASSWORD`. It creates a new super-admin only; a conflicting username stops startup without changing that account. An unchanged, active super-admin with matching credentials can restart idempotently. Disable the flag after the first creation and recreate the API container. These variables do not recover or rotate existing credentials.
 
-## Mobile App (`services/app`)
+## Admin dashboard
 
-These are set at build time and baked into the APK. Configure them in `eas.json` under each build profile.
+Type: reference.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `EXPO_PUBLIC_APP_NAME` | `Healthy Future` | Display name of the mobile app |
-| `EXPO_PUBLIC_APP_VERSION` | (from `package.json`) | Version string shown in the app |
-| `EXPO_PUBLIC_API_URL` | `https://healthy-future.dhep.org` | Backend API URL the app connects to |
-| `EXPO_PUBLIC_ANDROID_PACKAGE` | `edu.stanford.fsi.reap.app` | Android package name (different per build profile) |
+| Variable | Scope | Meaning |
+|----------|-------|---------|
+| `API_URL` | Container nginx runtime | Full API origin including scheme and port, reachable from nginx; full Compose supplies `http://api:8080` |
+| `ADMIN_PORT` | Full Compose host | Loopback dashboard port; default 3000 |
+| `BACKEND_PROXY_TARGET` | Vite development/preview process | API origin for `/api` and `/admin` proxies; default `http://localhost:8080` |
 
-### Build Profiles (eas.json)
+Browsers send API requests to the dashboard origin. A container-internal hostname is not a mobile endpoint. Changing container runtime variables requires recreating the affected container; `docker compose restart` alone is not a configuration update procedure.
 
-| Profile | App Name | API URL | Package |
-|---------|----------|---------|---------|
-| `production` | Healthy Future | `https://healthy-future.dhep.org` | `edu.stanford.fsi.reap.app` |
-| `preview` | Healthy Future | `https://healthy-future.dhep.org` | `edu.stanford.fsi.reap.apppreview` |
-| `development` | Healthy Future(Dev) | `https://healthy-future.dhep.org` | `edu.stanford.fsi.reap.appdev` |
+## Android build configuration
 
-Different package names allow installing multiple build profiles side-by-side on the same device.
+Type: reference.
 
-## Docker Compose Full Stack (.env)
+These public values are embedded in the app and must not contain secrets:
 
-When using `docker-compose.full.yml`, all variables are read from a `.env` file. Copy `.env.example` and edit:
+| Variable | Meaning |
+|----------|---------|
+| `EXPO_PUBLIC_APP_NAME` | Display name |
+| `EXPO_PUBLIC_APP_VERSION` | Component build label; not a repository-wide release policy |
+| `EXPO_PUBLIC_API_URL` | Your API origin reachable from the device |
+| `EXPO_PUBLIC_ANDROID_PACKAGE` | Android identity; profile-specific names permit side-by-side installs |
 
-```bash
-cp .env.example .env
-```
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `MYSQL_ROOT_PASSWORD` | `careloom` | MySQL root password |
-| `MYSQL_DATABASE` | `careloom` | Database name |
-| `MYSQL_USER` | `careloom` | Database user |
-| `MYSQL_PASSWORD` | `careloom` | Database user password |
-| `JWT_SECRET_KEY` | `dev-secret-do-not-use-in-prod` | JWT signing secret |
-
-For production deployments, **change all default values**.
-
-## Spring Profiles Reference
-
-| Profile | Purpose | Key Differences |
-|---------|---------|-----------------|
-| `dev` | Local development | Debug-level logging |
-| `local` | Local overrides | Developer-specific settings (not committed) |
-| `docker` | Docker containers | Reads datasource config from environment variables |
-| `stg` | Staging | Staging-specific settings |
-| `prod` | Production | Production-optimized settings |
+Use the [mobile build guide](../developer-guide/mobile-app.md#building-apks) for profile rules. Development and preview builds require an explicitly selected isolated endpoint. A distinct package name does not isolate data when two builds share an API.

@@ -1,7 +1,13 @@
 import { ConfigContext, ExpoConfig } from "@expo/config";
 import pkg from "./package.json";
 
+const { validateApiEndpoint } = require("./build-endpoint.cjs");
+
 export default (context: ConfigContext): ExpoConfig => {
+  validateApiEndpoint(
+    process.env.EAS_BUILD_PROFILE,
+    process.env.EXPO_PUBLIC_API_URL,
+  );
   return {
     owner: "dheplab",
     name: process.env.EXPO_PUBLIC_APP_NAME || "Healthy Future",

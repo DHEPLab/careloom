@@ -6,3 +6,25 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  jpa:
+    show-sql: false
+
+application:
+  bootstrap:
+    enabled: ${CARELOOM_BOOTSTRAP_ADMIN_ENABLED:false}
+    username: ${CARELOOM_BOOTSTRAP_ADMIN_USERNAME:}
+    password: ${CARELOOM_BOOTSTRAP_ADMIN_PASSWORD:}
+  aws:
+    bucket-name: ${AWS_S3_BUCKET:careloom-media-not-configured}
+
+google_map:
+  key: ${GOOGLE_MAP_API_KEY:not-configured}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never

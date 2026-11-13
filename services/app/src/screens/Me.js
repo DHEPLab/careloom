@@ -8,7 +8,6 @@ import Http from "../utils/http";
 import { styled } from "@/utils/styled";
 import { Colors } from "../constants";
 import { useBoolState, useFetch } from "@/utils";
-import Storage from "../cache/storage";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   Button,
@@ -36,15 +35,8 @@ export default function Me({ navigation }) {
   async function handleLogout() {
     closeConfirm();
     await Http.signOut();
-    clearCache();
     open();
     dispatch(signOut());
-  }
-
-  function clearCache() {
-    Storage.setNextVisit({});
-    Storage.setBabies([]);
-    Storage.setOfflineBabies([]);
   }
 
   return (

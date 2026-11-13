@@ -6,11 +6,11 @@ The admin dashboard is a React 18 single-page application built with Vite, TypeS
 
 ```bash
 cd services/admin-web
-yarn install
+yarn install --frozen-lockfile
 yarn start
 ```
 
-The dev server starts on **http://localhost:5173** by default. It proxies API requests to `http://localhost:8080`.
+The dev server starts on **http://localhost:3000** by default. It proxies API requests to `http://localhost:8080`.
 
 Make sure the API service is running before using the dashboard.
 

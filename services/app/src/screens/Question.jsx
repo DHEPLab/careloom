@@ -12,6 +12,7 @@ import { Button, Input } from "../components";
 import RadioGroup from "../components/elements/RadioGroup";
 import CheckBoxGroup from "../components/elements/CheckBoxGroup";
 import storage from "../cache/storage";
+import Http from "../utils/http";
 import i18next from "i18next";
 import { useTranslation } from "react-i18next";
 
@@ -23,7 +24,7 @@ export default function QuestionScreen({ navigation, route }) {
 
   const isPreview = params?.prevParams?.preview;
 
-  function onSubmit(values) {
+  async function onSubmit(values) {
     const resultList = Object.values(values).map((answer, i) => {
       const type = data.questions[i].type;
       const result = {
@@ -42,7 +43,12 @@ export default function QuestionScreen({ navigation, route }) {
       }
       return result;
     });
-    storage.setAnswers(visitId, { lessonId: lessonId, answers: resultList });
+    const session = await Http.session();
+    await storage.setAnswers(
+      visitId,
+      { lessonId: lessonId, answers: resultList },
+      session.account,
+    );
     navigation.navigate("LessonModules", {
       ...(params.prevParams || {}),
     });

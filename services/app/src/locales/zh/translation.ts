@@ -42,6 +42,10 @@ export default {
     submit: "提交",
   },
   SignIn: {
+    offlineOwnerUnknown:
+      "早期版本保存的离线记录没有账号归属信息。请联系项目管理员恢复记录后再继续，请勿清除应用存储。",
+    offlineAccountRecovery:
+      "此设备有待上传的离线记录。请使用原账号登录并同步；如果无法确定原账号，请联系项目管理员恢复记录。请勿清除应用存储。",
     loginSuccess: "登录成功",
     enterUsername: "请输入账户名称",
     enterPassword: "请输入账户密码",
@@ -50,6 +54,8 @@ export default {
     login: "登录",
   },
   App: {
+    offlineSyncPending:
+      "离线记录仍保存在此设备上。请联网后刷新重试，请勿清除应用存储。",
     submitFailed: "提交失败",
     networkError: "网络发生错误，请稍后重试",
     understood: "知道了",
