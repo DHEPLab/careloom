@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import moment from "moment";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -109,7 +109,7 @@ async function clearAccountCache() {
         "LAST_UPDATE_AT",
         "UNCOMMITTED_VISIT_STATUS",
       ].includes(key) ||
-      /^(LESSON_|MODULE_|NEXT_VISIT_|ANSWER_LESSON_)/.test(key),
+      /^(LESSON_|MODULE_|NEXT_VISIT_|NEXT_MODULE_|ANSWER_LESSON_)/.test(key),
   );
   await AsyncStorage.multiRemove(privateKeys);
 }
@@ -159,8 +159,9 @@ function getAnswers(id) {
   return getObject(`ANSWER_LESSON_${id}`);
 }
 
-function getNextModule() {
-  return getValue(`NEXT_MODULE`);
+function getNextModule(visitId) {
+  if (visitId === undefined || visitId === null) return Promise.resolve(0);
+  return getValue(`NEXT_MODULE_${visitId}`);
 }
 
 function getUncommittedVisitStatus() {
@@ -168,16 +169,18 @@ function getUncommittedVisitStatus() {
 }
 
 function useNumber(getFn, id) {
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState({ id, value: 0 });
+  const currentId = useRef(id);
+  currentId.current = id;
   function load() {
-    getFn(id).then((data) => {
-      setValue(Number(data) || 0);
+    return getFn(id).then((data) => {
+      if (currentId.current === id) setValue({ id, value: Number(data) || 0 });
     });
   }
   useEffect(() => {
     load();
-  }, []);
-  return [value, load];
+  }, [id]);
+  return [value.id === id ? value.value : 0, load];
 }
 
 function useWrapper(getFn, id) {
@@ -216,7 +219,22 @@ export default {
       await addObject(`ANSWER_LESSON_${visitId}`, answer);
     }),
   setNextVisit: (visit) => addObject("NEXT_VISIT", visit),
-  setNextModule: (nextModule) => addValue("NEXT_MODULE", nextModule.toString()),
+  setNextModule: (nextModule, visitId, account) =>
+    changeQueue(async () => {
+      await requireOfflineAccount(account);
+      if (visitId === undefined || visitId === null)
+        throw new Error("Module progress requires a visit ID.");
+      const index = Number(nextModule);
+      if (!Number.isInteger(index) || index < 0)
+        throw new Error("Module progress must be a nonnegative integer.");
+      const statuses = (await getUncommittedVisitStatus()) || {};
+      if (statuses[visitId]) {
+        statuses[visitId]._offlineRevision =
+          `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        await addObject("UNCOMMITTED_VISIT_STATUS", statuses);
+      }
+      await addValue(`NEXT_MODULE_${visitId}`, index.toString());
+    }),
   setUncommittedVisitStatus: (id, status, startTime, account) => {
     return changeQueue(async () => {
       if (!account) throw ownershipError();
@@ -252,6 +270,7 @@ export default {
       )
         return false;
       await addObject(`ANSWER_LESSON_${id}`, {});
+      await AsyncStorage.removeItem(`NEXT_MODULE_${id}`);
       delete statuses[id];
       await addObject("UNCOMMITTED_VISIT_STATUS", statuses);
       return true;
@@ -277,6 +296,6 @@ export default {
   useOfflineVisits: () => useWrapper(getOfflineVisits),
   useOfflineBabies: () => useWrapper(getOfflineBabies),
   useAnswers: (id) => useWrapper(getAnswers, id),
-  useNextModule: () => useNumber(getNextModule),
+  useNextModule: (visitId) => useNumber(getNextModule, visitId),
   useUncommittedVisitStatus: () => useWrapper(getUncommittedVisitStatus),
 };

@@ -82,9 +82,9 @@ const Home: React.FC<Props> = ({ navigation }) => {
     if (!session.account || !session.token) return;
     await Storage.requireOfflineAccount(session.account);
     const uncommitted = await Storage.getUncommittedVisitStatus();
-    const nextModuleIndex = await Storage.getNextModule();
     const id = Object.keys(uncommitted || {})[0];
     if (id) {
+      const nextModuleIndex = await Storage.getNextModule(id);
       const answersData = await Storage.getAnswers(id);
       const current = await Http.session();
       if (
@@ -113,8 +113,6 @@ const Home: React.FC<Props> = ({ navigation }) => {
           );
           if (acknowledged) {
             await Storage.setNextVisit({});
-            if (!(await Storage.pendingOfflineRecords()))
-              await Storage.setNextModule(0);
           }
         })
         .catch(() => openSubmitErrorMessage());

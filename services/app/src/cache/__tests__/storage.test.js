@@ -1,4 +1,5 @@
-import { renderHook } from "@testing-library/react-hooks";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { renderHook, act } from "@testing-library/react-hooks";
 import { waitFor } from "@testing-library/react-native";
 
 import Visits from "../../utils/visit";
@@ -36,8 +37,9 @@ it("should return null", async () => {
 });
 
 it("should set next module index", async () => {
-  storage.setNextModule(1);
-  const { result } = renderHook(() => storage.useNextModule());
+  await storage.activateOfflineAccount("https://synthetic.invalid|1");
+  await storage.setNextModule(1, 7, "https://synthetic.invalid|1");
+  const { result } = renderHook(() => storage.useNextModule(7));
   await waitFor(() => {
     const [nextModule] = result.current;
     expect(nextModule).toBe(1);
@@ -77,4 +79,41 @@ it("should set last update at", async () => {
   return storage.getLastUpdateAt().then((at) => {
     expect(at).toBe("2020-07-12T11:11:00");
   });
+});
+
+it("does not display the previous visit cursor when the hook changes visits", async () => {
+  const account = "https://synthetic.invalid|1";
+  await storage.activateOfflineAccount(account);
+  await storage.setNextModule(3, 7, account);
+  const { result, rerender } = renderHook(
+    ({ id }) => storage.useNextModule(id),
+    { initialProps: { id: 7 } },
+  );
+  await waitFor(() => expect(result.current[0]).toBe(3));
+  rerender({ id: 8 });
+  expect(result.current[0]).toBe(0);
+});
+
+it("ignores a delayed cursor read from the previous visit", async () => {
+  const account = "https://synthetic.invalid|1";
+  await storage.activateOfflineAccount(account);
+  await storage.setNextModule(1, 8, account);
+  let releaseOldRead;
+  AsyncStorage.getItem.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        releaseOldRead = resolve;
+      }),
+  );
+  const { result, rerender } = renderHook(
+    ({ id }) => storage.useNextModule(id),
+    { initialProps: { id: 7 } },
+  );
+  await waitFor(() => expect(releaseOldRead).toBeDefined());
+  rerender({ id: 8 });
+  await waitFor(() => expect(result.current[0]).toBe(1));
+  await act(async () => {
+    releaseOldRead("3");
+  });
+  expect(result.current[0]).toBe(1);
 });

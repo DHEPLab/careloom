@@ -27,7 +27,7 @@ export default function LessonModules({ navigation, route }) {
   const { params } = route;
   const [lesson] = Storage.useLesson(params?.id);
   const [babyId, setBabyId] = useState();
-  const [nextModule, reloadNextModule] = Storage.useNextModule();
+  const [nextModule, reloadNextModule] = Storage.useNextModule(params?.visitId);
   const canFinish = nextModule > lesson.modules?.length - 1;
   const [questionnaire, setQuestionnaire] = useState();
   const { isConnected } = useSelector((state) => state.net);
@@ -36,8 +36,16 @@ export default function LessonModules({ navigation, route }) {
 
   useEffect(() => {
     if (!params.preview && params.originModuleId && params.finished) {
-      Storage.setNextModule(nextModule + 1);
-      reloadNextModule();
+      Http.session()
+        .then((session) =>
+          Storage.setNextModule(
+            nextModule + 1,
+            params.visitId,
+            session.account,
+          ),
+        )
+        .then(reloadNextModule)
+        .catch(openErrorMessage);
     }
   }, [route.params?.originModuleId]);
 
@@ -103,16 +111,12 @@ export default function LessonModules({ navigation, route }) {
           },
           { token: session.token },
         );
-        const acknowledged = await Storage.committedVisitStatus(
+        await Storage.committedVisitStatus(
           params?.visitId,
           uncommitted[params?.visitId],
           answersData,
           session.account,
         );
-        if (acknowledged) {
-          if (!(await Storage.pendingOfflineRecords()))
-            await Storage.setNextModule(0);
-        }
       } else {
         // from Home screen, offline mode, save visit status to storage
         await Storage.setUncommittedVisitStatus(

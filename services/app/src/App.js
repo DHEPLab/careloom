@@ -41,6 +41,8 @@ export default function App(props) {
   // Load any resources or data that we need prior to rendering the app
   useEffect(() => {
     async function loadResourcesAndDataAsync() {
+      // Start signed out; only restore a validated or owner-bound offline session.
+      store.dispatch(restoreToken(null));
       try {
         SplashScreen.preventAutoHideAsync();
 

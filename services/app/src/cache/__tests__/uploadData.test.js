@@ -213,3 +213,49 @@ it("requires an authenticated account even when a storage owner exists", async (
     code: "OFFLINE_ACCOUNT_MISMATCH",
   });
 });
+
+it("clears only the acknowledged visit progress even when unrelated work is queued", async () => {
+  await storage.addOfflineBaby({ name: "Synthetic unrelated family" }, account);
+  await storage.setUncommittedVisitStatus(
+    7,
+    "DONE",
+    "2026-11-13T10:00:00",
+    account,
+  );
+  await storage.setNextModule(3, 7, account);
+  await storage.setUncommittedVisitStatus(
+    8,
+    "UNDONE",
+    "2026-11-13T11:00:00",
+    account,
+  );
+  await storage.setNextModule(1, 8, account);
+  const snapshot = (await storage.getUncommittedVisitStatus())[7];
+  expect(
+    await storage.committedVisitStatus("7", snapshot, undefined, account),
+  ).toBe(true);
+  expect(Number(await storage.getNextModule(7))).toBe(0);
+  expect(Number(await storage.getNextModule(8))).toBe(1);
+  expect(Number(await storage.getNextModule(9))).toBe(0);
+  expect(await storage.getOfflineBabies()).toHaveLength(1);
+});
+it("retains newer visit progress while an older status request is outstanding", async () => {
+  await storage.setUncommittedVisitStatus(
+    7,
+    "UNDONE",
+    "2026-11-13T10:00:00",
+    account,
+  );
+  await storage.setNextModule(1, 7, account);
+  const snapshot = (await storage.getUncommittedVisitStatus())[7];
+  await storage.setNextModule(2, 7, account);
+  expect(
+    await storage.committedVisitStatus("7", snapshot, undefined, account),
+  ).toBe(false);
+  expect(Number(await storage.getNextModule(7))).toBe(2);
+});
+it("holds unassigned legacy progress instead of applying it to another visit", async () => {
+  await AsyncStorage.setItem("NEXT_MODULE", "3");
+  expect(Number(await storage.getNextModule(8))).toBe(0);
+  expect(await AsyncStorage.getItem("NEXT_MODULE")).toBe("3");
+});
