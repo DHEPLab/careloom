@@ -1,5 +1,5 @@
 import React from "react";
-import { render, waitFor } from "@testing-library/react-native";
+import TestRenderer, { act } from "react-test-renderer";
 import NetInfo from "@react-native-community/netinfo";
 import App from "../App";
 import store from "../store";
@@ -7,6 +7,11 @@ import Http from "../utils/http";
 import { syncOfflineData } from "../cache/uploadData";
 
 jest.mock("react-native-gesture-handler", () => ({}));
+// Native status-bar rendering is outside these session-restoration tests.
+jest.mock(
+  "react-native/Libraries/Components/StatusBar/StatusBar",
+  () => () => null,
+);
 jest.mock("fundebug-reactnative", () => ({ init: jest.fn() }));
 jest.mock("expo-splash-screen", () => ({
   preventAutoHideAsync: jest.fn(),
@@ -45,12 +50,11 @@ jest.mock("../store", () => {
 });
 jest.mock("../navigation/Navigator", () => {
   const React = require("react");
-  const { Text } = require("react-native");
   const { useSelector } = require("react-redux");
   return function TestNavigator() {
     const token = useSelector((state) => state.user.userToken);
     return React.createElement(
-      Text,
+      "Route",
       { testID: "route" },
       token ? "authenticated" : "signed-out",
     );
@@ -64,6 +68,21 @@ jest.mock("../utils/http", () => ({
 }));
 jest.mock("../cache/uploadData", () => ({ syncOfflineData: jest.fn() }));
 
+let screen;
+async function renderApp() {
+  // Flush the actual App startup effect; avoid the UI library's unrelated
+  // native-widget discovery cost on a cold CI cache.
+  await act(async () => {
+    screen = TestRenderer.create(<App />);
+  });
+  return screen.root.findByProps({ testID: "route" }).props.children;
+}
+
+afterEach(() => {
+  act(() => screen?.unmount());
+  screen = undefined;
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
   store.dispatch({ type: "RESTORE_TOKEN", token: "default token" });
@@ -76,20 +95,14 @@ beforeEach(() => {
 });
 
 it("shows sign-in on a fresh online startup without requesting an authenticated profile", async () => {
-  const screen = render(<App />);
-  await waitFor(() =>
-    expect(screen.getByTestId("route").props.children).toBe("signed-out"),
-  );
+  expect(await renderApp()).toBe("signed-out");
   expect(Http.get).not.toHaveBeenCalled();
 });
 it("fails closed when startup fails before session restoration", async () => {
   NetInfo.fetch.mockRejectedValueOnce(
     new Error("synthetic connectivity failure"),
   );
-  const screen = render(<App />);
-  await waitFor(() =>
-    expect(screen.getByTestId("route").props.children).toBe("signed-out"),
-  );
+  expect(await renderApp()).toBe("signed-out");
 });
 it("restores a previously bound offline account", async () => {
   NetInfo.fetch.mockResolvedValue({ isInternetReachable: false });
@@ -97,10 +110,7 @@ it("restores a previously bound offline account", async () => {
     token: "synthetic-token",
     account: "https://synthetic.invalid|1",
   });
-  const screen = render(<App />);
-  await waitFor(() =>
-    expect(screen.getByTestId("route").props.children).toBe("authenticated"),
-  );
+  expect(await renderApp()).toBe("authenticated");
   expect(Http.get).not.toHaveBeenCalled();
 });
 it("restores a validated online session", async () => {
@@ -108,10 +118,7 @@ it("restores a validated online session", async () => {
     token: "synthetic-token",
     account: "https://synthetic.invalid|1",
   });
-  const screen = render(<App />);
-  await waitFor(() =>
-    expect(screen.getByTestId("route").props.children).toBe("authenticated"),
-  );
+  expect(await renderApp()).toBe("authenticated");
   expect(Http.bindAccount).toHaveBeenCalledWith(1);
   expect(syncOfflineData).toHaveBeenCalled();
 });
@@ -121,8 +128,5 @@ it("shows sign-in when online profile validation fails", async () => {
     account: "https://synthetic.invalid|1",
   });
   Http.get.mockRejectedValueOnce(new Error("synthetic validation failure"));
-  const screen = render(<App />);
-  await waitFor(() =>
-    expect(screen.getByTestId("route").props.children).toBe("signed-out"),
-  );
+  expect(await renderApp()).toBe("signed-out");
 });
